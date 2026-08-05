@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f4f5f0" />
+    <meta name="description" content="A private, offline vehicle fuel and service logbook." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="RoadLedger" />
+    <title>RoadLedger</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <noscript>
+      <div class="noscript">RoadLedger needs JavaScript to store and calculate your vehicle data.</div>
+    </noscript>
+
+    <svg class="svg-sprite" aria-hidden="true">
+      <symbol id="i-dashboard" viewBox="0 0 24 24"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"/></symbol>
+      <symbol id="i-logbook" viewBox="0 0 24 24"><path d="M6 3h11a3 3 0 0 1 3 3v15H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Zm0 2a1 1 0 0 0-1 1v9.17c.31-.11.65-.17 1-.17h12V6a1 1 0 0 0-1-1H6Zm0 12a1 1 0 1 0 0 2h12v-2H6Zm2-9h7v2H8V8Z"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19h17v2H2V4h2v15Zm3-3-1.5-1.32 4-4.55 3 2.5L17.5 7 19 8.32l-6.5 7.36-2.82-2.35L7 16Z"/></symbol>
+      <symbol id="i-garage" viewBox="0 0 24 24"><path d="m12 2 9 5v14h-3v-9H6v9H3V7l9-5Zm0 2.3L5 8.19V19h1v-9h12v9h1V8.19L12 4.3ZM8 12h8v2H8v-2Zm0 4h8v2H8v-2Z"/></symbol>
+      <symbol id="i-fuel" viewBox="0 0 24 24"><path d="M6 2h9a2 2 0 0 1 2 2v7.17l1.24 1.24c.48.47.76 1.12.76 1.8V18a1 1 0 1 0 2 0V9.41l-2.7-2.7 1.4-1.42L23 8.59V18a3 3 0 0 1-6 0v-3.79a.7.7 0 0 0-.17-.41l-.2-.19A2 2 0 0 1 15 14H6v8H4V4a2 2 0 0 1 2-2Zm0 2v8h9V4H6Zm2 2h5v4H8V6Z"/></symbol>
+      <symbol id="i-service" viewBox="0 0 24 24"><path d="M22 6.5a6 6 0 0 1-7.88 5.7L6.2 20.12a3 3 0 1 1-2.32-2.32l7.92-7.92A6 6 0 0 1 19.5 2l-3.68 3.68 2.5 2.5L22 4.5v2ZM16 10.5a4 4 0 0 0 3.92-3.22l-1.6 1.6-1.42.01-3.8-3.8.01-1.41 1.61-1.6a4 4 0 0 0-1.02 7.4l.92.51-9.4 9.4a1 1 0 1 0-.61-.61l9.4-9.4.51.92c.45.13.94.2 1.48.2Z"/></symbol>
+      <symbol id="i-expense" viewBox="0 0 24 24"><path d="M3 5h18v14H3V5Zm2 2v2h14V7H5Zm0 4v6h14v-6H5Zm2 2h5v2H7v-2Z"/></symbol>
+      <symbol id="i-car" viewBox="0 0 24 24"><path d="m5.2 6 1.4-3h10.8l1.4 3H20a2 2 0 0 1 2 2v9h-2v2h-3v-2H7v2H4v-2H2V8a2 2 0 0 1 2-2h1.2Zm2.2-1L6 8h12l-1.4-3H7.4ZM4 10v5h16v-5H4Zm2 1h3v2H6v-2Zm9 0h3v2h-3v-2Z"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M11 3h2v10.17l3.59-3.58L18 11l-6 6-6-6 1.41-1.41L11 13.17V3ZM4 19h16v2H4v-2Z"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M11 21h2V10.83l3.59 3.58L18 13l-6-6-6 6 1.41 1.41L11 10.83V21ZM4 3h16v2H4V3Z"/></symbol>
+      <symbol id="i-more" viewBox="0 0 24 24"><path d="M6 10a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm6 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm6 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m9.2 16.2-4.4-4.4-1.4 1.4L9.2 19 21 7.2l-1.4-1.4-10.4 10.4Z"/></symbol>
+    </svg>
+
+    <div id="app" class="app-shell" hidden>
+      <aside class="sidebar" aria-label="Primary navigation">
+        <a class="brand" href="#dashboard" data-nav="dashboard" aria-label="RoadLedger home">
+          <span class="brand-mark"><svg><use href="#i-chart"></use></svg></span>
+          <span>RoadLedger</span>
+        </a>
+
+        <nav class="side-nav">
+          <button class="nav-item active" type="button" data-nav="dashboard"><svg><use href="#i-dashboard"></use></svg><span>Overview</span></button>
+          <button class="nav-item" type="button" data-nav="logbook"><svg><use href="#i-logbook"></use></svg><span>Logbook</span></button>
+          <button class="nav-item" type="button" data-nav="reports"><svg><use href="#i-chart"></use></svg><span>Reports</span></button>
+          <button class="nav-item" type="button" data-nav="garage"><svg><use href="#i-garage"></use></svg><span>Garage</span></button>
+        </nav>
+
+        <div class="sidebar-foot">
+          <div class="privacy-note"><span class="status-dot"></span><div><strong>Private by design</strong><small>Data stays on this device</small></div></div>
+          <button id="side-add-button" class="button primary wide" type="button"><svg><use href="#i-plus"></use></svg>Add a record</button>
+        </div>
+      </aside>
+
+      <div class="main-shell">
+        <header class="topbar">
+          <div class="mobile-brand">
+            <span class="brand-mark"><svg><use href="#i-chart"></use></svg></span>
+            <strong>RoadLedger</strong>
+          </div>
+          <div class="page-heading">
+            <p id="page-eyebrow" class="eyebrow">Your garage</p>
+            <h1 id="page-title">Overview</h1>
+          </div>
+          <div class="topbar-actions">
+            <span id="network-status" class="network-status"><span></span><span class="network-text">Checking offline…</span></span>
+            <label class="vehicle-switcher" for="global-vehicle-select">
+              <span class="sr-only">Filter by vehicle</span>
+              <svg><use href="#i-car"></use></svg>
+              <select id="global-vehicle-select" aria-label="Filter by vehicle"></select>
+            </label>
+            <button id="install-button" class="button subtle install-button" type="button" hidden><svg><use href="#i-download"></use></svg><span>Install</span></button>
+          </div>
+        </header>
+
+        <main id="main-content" tabindex="-1">
+          <section id="view-dashboard" class="view active" aria-labelledby="page-title">
+            <div id="dashboard-content"></div>
+          </section>
+
+          <section id="view-logbook" class="view" aria-labelledby="page-title">
+            <div class="section-toolbar">
+              <div>
+                <p class="section-kicker">Every record, one timeline</p>
+                <h2>Vehicle history</h2>
+              </div>
+              <button class="button primary desktop-action" type="button" data-open-record><svg><use href="#i-plus"></use></svg>Add record</button>
+            </div>
+            <div class="filter-row" role="group" aria-label="Logbook filters">
+              <button class="filter-chip active" type="button" data-log-filter="all">All</button>
+              <button class="filter-chip" type="button" data-log-filter="fuel">Fuel</button>
+              <button class="filter-chip" type="button" data-log-filter="service">Service</button>
+              <button class="filter-chip" type="button" data-log-filter="expense">Expenses</button>
+              <label class="search-field"><span class="sr-only">Search logbook</span><input id="logbook-search" type="search" placeholder="Search notes, station, workshop…" /></label>
+            </div>
+            <div id="logbook-content"></div>
+          </section>
+
+          <section id="view-reports" class="view" aria-labelledby="page-title">
+            <div class="section-toolbar reports-toolbar">
+              <div>
+                <p class="section-kicker">Clear trends, honest calculations</p>
+                <h2>Ownership reports</h2>
+              </div>
+              <div class="period-control" role="group" aria-label="Report period">
+                <button type="button" data-period="90">90 days</button>
+                <button type="button" data-period="365" class="active">1 year</button>
+                <button type="button" data-period="all">All time</button>
+              </div>
+            </div>
+            <div id="reports-content"></div>
+          </section>
+
+          <section id="view-garage" class="view" aria-labelledby="page-title">
+            <div class="section-toolbar">
+              <div>
+                <p class="section-kicker">Vehicles and preferences</p>
+                <h2>Your garage</h2>
+              </div>
+              <button class="button primary" id="add-vehicle-button" type="button"><svg><use href="#i-plus"></use></svg>Add vehicle</button>
+            </div>
+            <div id="garage-content"></div>
+          </section>
+        </main>
+      </div>
+
+      <button id="mobile-add-button" class="mobile-fab" type="button" aria-label="Add record"><svg><use href="#i-plus"></use></svg></button>
+
+      <nav class="bottom-nav" aria-label="Primary navigation">
+        <button class="nav-item active" type="button" data-nav="dashboard"><svg><use href="#i-dashboard"></use></svg><span>Home</span></button>
+        <button class="nav-item" type="button" data-nav="logbook"><svg><use href="#i-logbook"></use></svg><span>Logbook</span></button>
+        <span class="bottom-nav-gap" aria-hidden="true"></span>
+        <button class="nav-item" type="button" data-nav="reports"><svg><use href="#i-chart"></use></svg><span>Reports</span></button>
+        <button class="nav-item" type="button" data-nav="garage"><svg><use href="#i-garage"></use></svg><span>Garage</span></button>
+      </nav>
+    </div>
+
+    <div id="loading-screen" class="loading-screen">
+      <div class="brand-mark large"><svg><use href="#i-chart"></use></svg></div>
+      <p>Opening your logbook…</p>
+    </div>
+
+    <dialog id="record-dialog" class="modal record-modal">
+      <form id="record-form" method="dialog" novalidate>
+        <div class="modal-head">
+          <div><p class="eyebrow">Logbook entry</p><h2 id="record-dialog-title">Add a record</h2></div>
+          <button class="icon-button" type="button" data-close-dialog="record-dialog" aria-label="Close"><svg><use href="#i-close"></use></svg></button>
+        </div>
+
+        <div id="record-kind-control" class="segmented-control" role="tablist" aria-label="Record type">
+          <button type="button" role="tab" data-record-kind="fuel" class="active"><svg><use href="#i-fuel"></use></svg>Fuel</button>
+          <button type="button" role="tab" data-record-kind="service"><svg><use href="#i-service"></use></svg>Service</button>
+          <button type="button" role="tab" data-record-kind="expense"><svg><use href="#i-expense"></use></svg>Expense</button>
+        </div>
+
+        <input id="record-id" name="id" type="hidden" />
+        <input id="record-kind" name="kind" type="hidden" value="fuel" />
+        <div class="form-grid">
+          <label class="field full"><span>Vehicle</span><select id="record-vehicle" name="vehicleId" required></select></label>
+          <label class="field"><span>Date</span><input id="record-date" name="date" type="date" required /></label>
+          <label class="field"><span>Odometer <small id="odometer-unit-label">km</small></span><input id="record-odometer" name="odometer" type="number" min="0" step="0.1" inputmode="decimal" placeholder="24,820" required /></label>
+
+          <div class="fuel-fields contents">
+            <label class="field"><span>Fuel quantity <small id="volume-unit-label">L</small></span><input id="fuel-quantity" name="quantity" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="32.50" /></label>
+            <label class="field"><span>Total cost <small class="currency-code">INR</small></span><input id="fuel-cost" name="fuelCost" type="number" min="0" step="0.01" inputmode="decimal" placeholder="3,200" /><output id="fuel-unit-price" class="calculated-value" for="fuel-quantity fuel-cost">Enter quantity and cost to calculate unit price</output></label>
+            <div class="field"><span>Fuel grade / product <small>Optional</small></span><input id="fuel-grade" name="fuelGrade" list="fuel-grade-suggestions" autocomplete="off" placeholder="e.g. Regular or 95 octane" /><small class="field-hint">The pump product—not the vehicle’s fuel type.</small><datalist id="fuel-grade-suggestions"></datalist></div>
+            <div class="field"><span>Fuel station <small>Optional</small></span><input id="fuel-station" name="station" list="station-suggestions" autocomplete="organization" placeholder="Start typing or pick a recent station" /><datalist id="station-suggestions"></datalist><div id="station-quick-picks" class="suggestion-chips" aria-label="Previously used fuel stations" hidden></div></div>
+            <div class="check-row full">
+              <label class="check-card"><input id="fuel-full-tank" name="fullTank" type="checkbox" checked /><span><svg><use href="#i-check"></use></svg></span><div><strong>Filled to full</strong><small>Used for accurate economy</small></div></label>
+              <label class="check-card"><input id="fuel-missed-fill" name="missedFill" type="checkbox" /><span><svg><use href="#i-check"></use></svg></span><div><strong>Missed a fill</strong><small>Exclude this economy segment</small></div></label>
+            </div>
+          </div>
+
+          <div class="service-fields contents" hidden>
+            <label class="field"><span>Category</span><select id="service-category" name="category"></select></label>
+            <label class="field"><span>Total cost <small class="currency-code">INR</small></span><input id="service-cost" name="serviceCost" type="number" min="0" step="0.01" inputmode="decimal" placeholder="1,500" /></label>
+            <label class="field full"><span id="vendor-label">Workshop or vendor</span><input id="service-vendor" name="vendor" autocomplete="organization" placeholder="Optional" /></label>
+            <div class="service-reminder-fields contents">
+              <div class="form-divider full"><span>Next reminder</span><small>Optional</small></div>
+              <label class="field"><span>Due date</span><input id="service-next-date" name="nextDueDate" type="date" /></label>
+              <label class="field"><span>Due odometer <small class="distance-unit">km</small></span><input id="service-next-odometer" name="nextDueOdometer" type="number" min="0" step="0.1" inputmode="decimal" placeholder="30,000" /></label>
+            </div>
+          </div>
+
+          <label class="field full"><span>Notes</span><textarea id="record-notes" name="notes" rows="3" placeholder="Anything worth remembering…"></textarea></label>
+          <div class="field full attachment-field">
+            <span>Receipt or invoice <small>Optional</small></span>
+            <label class="file-drop"><input id="record-attachment" type="file" accept="image/*" capture="environment" /><svg><use href="#i-plus"></use></svg><span>Add a photo</span></label>
+            <div id="attachment-preview" class="attachment-preview" hidden></div>
+          </div>
+        </div>
+
+        <p id="record-form-error" class="form-error" role="alert" hidden></p>
+        <div class="modal-actions">
+          <button id="delete-record-button" class="button danger" type="button" hidden>Delete</button>
+          <span class="action-spacer"></span>
+          <button class="button subtle" type="button" data-close-dialog="record-dialog">Cancel</button>
+          <button class="button primary" type="submit">Save record</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="vehicle-dialog" class="modal">
+      <form id="vehicle-form" method="dialog" novalidate>
+        <div class="modal-head">
+          <div><p class="eyebrow">Garage</p><h2 id="vehicle-dialog-title">Add a vehicle</h2></div>
+          <button class="icon-button" type="button" data-close-dialog="vehicle-dialog" aria-label="Close"><svg><use href="#i-close"></use></svg></button>
+        </div>
+        <input id="vehicle-id" name="id" type="hidden" />
+        <div class="form-grid">
+          <label class="field full"><span>Vehicle nickname</span><input id="vehicle-name" name="name" required maxlength="40" placeholder="e.g. City commuter" autocomplete="off" /></label>
+          <label class="field"><span>Vehicle type</span><select id="vehicle-type" name="type"><option value="car">Car</option><option value="motorcycle">Motorcycle</option><option value="scooter">Scooter</option><option value="van">Van</option><option value="truck">Truck</option><option value="other">Other</option></select></label>
+          <label class="field"><span>Fuel type</span><select id="vehicle-fuel-type" name="fuelType"><option>Petrol</option><option>Diesel</option><option>CNG</option><option>LPG</option><option>Hybrid</option><option>Electric</option><option>Other</option></select></label>
+          <label class="field"><span>Make</span><input id="vehicle-make" name="make" autocomplete="organization" placeholder="Honda" /></label>
+          <label class="field"><span>Model</span><input id="vehicle-model" name="model" autocomplete="off" placeholder="City" /></label>
+          <label class="field"><span>Year</span><input id="vehicle-year" name="year" type="number" min="1900" max="2100" inputmode="numeric" placeholder="2022" /></label>
+          <label class="field"><span>Registration</span><input id="vehicle-registration" name="registration" autocapitalize="characters" maxlength="20" placeholder="Optional" /></label>
+          <label class="field full"><span>Starting odometer <small class="distance-unit">km</small></span><input id="vehicle-odometer" name="initialOdometer" type="number" min="0" step="0.1" inputmode="decimal" placeholder="0" /></label>
+          <label class="field full color-field"><span>Accent colour</span><input id="vehicle-color" name="color" type="color" value="#2f7d5d" /></label>
+        </div>
+        <p id="vehicle-form-error" class="form-error" role="alert" hidden></p>
+        <div class="modal-actions">
+          <button id="archive-vehicle-button" class="button danger" type="button" hidden>Archive</button>
+          <span class="action-spacer"></span>
+          <button class="button subtle" type="button" data-close-dialog="vehicle-dialog">Cancel</button>
+          <button class="button primary" type="submit">Save vehicle</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="import-dialog" class="modal compact-modal">
+      <div class="modal-head">
+        <div><p class="eyebrow">Data import</p><h2>Review import</h2></div>
+        <button class="icon-button" type="button" data-close-dialog="import-dialog" aria-label="Close"><svg><use href="#i-close"></use></svg></button>
+      </div>
+      <div id="import-summary"></div>
+      <div class="modal-actions stacked-mobile">
+        <button class="button subtle" type="button" data-close-dialog="import-dialog">Cancel</button>
+        <button id="import-merge-button" class="button subtle" type="button">Merge with existing</button>
+        <button id="import-replace-button" class="button primary" type="button">Replace existing data</button>
+      </div>
+    </dialog>
+
+    <dialog id="action-dialog" class="modal action-modal">
+      <div class="modal-head">
+        <div><p class="eyebrow">Quick add</p><h2>What would you like to log?</h2></div>
+        <button class="icon-button" type="button" data-close-dialog="action-dialog" aria-label="Close"><svg><use href="#i-close"></use></svg></button>
+      </div>
+      <div class="action-grid">
+        <button type="button" data-quick-kind="fuel"><span class="action-icon fuel"><svg><use href="#i-fuel"></use></svg></span><strong>Fuel fill-up</strong><small>Quantity, cost and economy</small></button>
+        <button type="button" data-quick-kind="service"><span class="action-icon service"><svg><use href="#i-service"></use></svg></span><strong>Service</strong><small>Maintenance and reminders</small></button>
+        <button type="button" data-quick-kind="expense"><span class="action-icon expense"><svg><use href="#i-expense"></use></svg></span><strong>Expense</strong><small>Insurance, tolls and more</small></button>
+      </div>
+    </dialog>
+
+    <input id="backup-file-input" type="file" accept="application/json,.json,.roadledger" hidden />
+    <input id="csv-file-input" type="file" accept="text/csv,.csv" hidden />
+    <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>

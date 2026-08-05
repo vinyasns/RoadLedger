@@ -1,0 +1,22 @@
+{
+  "name": "RoadLedger — Vehicle Logbook",
+  "short_name": "RoadLedger",
+  "description": "A private, offline fuel, service and vehicle expense logbook.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "background_color": "#f4f5f0",
+  "theme_color": "#f4f5f0",
+  "categories": ["utilities", "finance", "productivity"],
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Log fuel", "short_name": "Fuel", "url": "./?add=fuel", "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Log service", "short_name": "Service", "url": "./?add=service", "icons": [{ "src": "./icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

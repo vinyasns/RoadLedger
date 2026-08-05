@@ -1,0 +1,20 @@
+# Local RoadLedger exports and user data
+*.roadledger
+*.roadledger.json
+*-roadledger-backup.json
+roadledger-*.json
+
+# Local environment and tool state
+.agents/
+.codex/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+
+# Dependencies and test output
+node_modules/
+coverage/
+test-results/
+playwright-report/
