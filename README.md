@@ -2,6 +2,10 @@
 
 RoadLedger is a private, local-first vehicle logbook for fuel, service, maintenance reminders, expenses, and ownership reports. It is an installable Progressive Web App and has no runtime dependencies or backend. Node.js is used only for the optional automated tests; it is not used by the deployed website.
 
+## AI-assisted development
+
+RoadLedger was developed with assistance from AI coding tools. The application has been reviewed and tested, but AI-assisted code may still contain errors or omissions. Use it as-is, review the code before relying on it for critical purposes, and keep regular backups of your local data.
+
 ## Run locally
 
 ```bash
