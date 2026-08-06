@@ -546,14 +546,12 @@ function formatMoneyAxis(minor, compact) {
   const useCompactNotation = Math.abs(value) >= 1000;
   try {
     return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: currency(),
       notation: useCompactNotation ? 'compact' : 'standard',
       minimumFractionDigits: 0,
       maximumFractionDigits: useCompactNotation ? 1 : 0
     }).format(value);
   } catch {
-    return formatMoney(Math.round(minor), currency(), { compact: true });
+    return formatNumber(value, useCompactNotation ? 1 : 0);
   }
 }
 
@@ -604,9 +602,11 @@ function renderBarChart(months) {
   const yTicks = maximum > 0
     ? [{ value: maximum, position: 0 }, { value: maximum / 2, position: 50 }, { value: 0, position: 100 }]
     : [{ value: 0, position: 100 }];
-  const yLabels = yTicks.map((tick) => `<span class="bar-y-axis-label" style="top:${tick.position}%">${escapeHTML(formatMoneyAxis(tick.value, compactAxis))}</span>`).join('');
+  const yTickLabels = yTicks.map((tick) => formatMoneyAxis(tick.value, compactAxis));
+  const yLabels = yTicks.map((tick, index) => `<span class="bar-y-axis-label" style="top:${tick.position}%">${escapeHTML(yTickLabels[index])}</span>`).join('');
+  const yAxisSizer = `<span class="bar-y-axis-sizer">${yTickLabels.map((label) => `<span>${escapeHTML(label)}</span>`).join('')}</span>`;
   const gridLines = yTicks.map((tick) => `<span class="bar-grid-line" style="top:${tick.position}%"></span>`).join('');
-  return `<div class="chart-frame bar-chart-frame" role="region" aria-label="Monthly spending overview showing the complete selected period; vertical axis shows total spending"><div class="bar-chart${extendedTimeline ? ' dense' : ''}"><div class="bar-y-axis" aria-hidden="true">${yLabels}</div><div class="bar-plot">${gridLines}${bars}</div><div class="bar-axis" aria-hidden="true">${labels}</div></div></div><small class="chart-overview-note">All ${months.length} month${months.length === 1 ? '' : 's'} shown · Tap or hover a bar for details.</small>`;
+  return `<div class="chart-frame bar-chart-frame" role="region" aria-label="Monthly spending overview showing the complete selected period; vertical axis shows total spending"><div class="bar-chart${extendedTimeline ? ' dense' : ''}"><div class="bar-y-axis" aria-hidden="true">${yAxisSizer}${yLabels}</div><div class="bar-plot">${gridLines}${bars}</div><div class="bar-axis" aria-hidden="true">${labels}</div></div></div><small class="chart-overview-note">All ${months.length} month${months.length === 1 ? '' : 's'} shown · Tap or hover a bar for details.</small>`;
 }
 
 function renderLineChart(segments) {
@@ -904,7 +904,7 @@ function renderReports() {
       <article class="metric-card"><div class="metric-head"><span>Cost per distance</span><span class="metric-icon expense"><svg><use href="#i-chart"></use></svg></span></div><strong class="metric-value">${stats.distanceKm ? `${formatMoney(Math.round(stats.totalSpend / fromCanonicalDistance(stats.distanceKm, state.data.settings.distanceUnit)), currency())}/${state.data.settings.distanceUnit}` : '—'}</strong><span class="metric-foot">All ownership costs</span></article>
     </div>
     <div class="reports-grid">
-      <article class="panel chart-panel wide"><div class="panel-head"><div><h3>Monthly spending</h3><p>Fuel, service and other expenses</p></div><div class="chart-legend"><span class="legend-item"><i style="background:var(--fuel)"></i>Fuel</span><span class="legend-item"><i style="background:var(--service)"></i>Service</span><span class="legend-item"><i style="background:var(--expense)"></i>Other</span></div></div>${renderBarChart(months)}</article>
+      <article class="panel chart-panel wide"><div class="panel-head"><div><h3>Monthly spending</h3><p>Fuel, service and other expenses${useCompactChartAxes() ? ` · ${escapeHTML(currency())}` : ''}</p></div><div class="chart-legend"><span class="legend-item"><i style="background:var(--fuel)"></i>Fuel</span><span class="legend-item"><i style="background:var(--service)"></i>Service</span><span class="legend-item"><i style="background:var(--expense)"></i>Other</span></div></div>${renderBarChart(months)}</article>
       <article class="panel chart-panel wide"><div class="panel-head"><div><h3>Fuel details</h3><p>Cost, volume, price and economy range</p></div></div>${renderFuelOverview(stats)}</article>
       <article class="panel chart-panel"><div class="panel-head"><div><h3>Fuel economy</h3><p>Full-to-full weighted trend</p></div><strong>${formatEfficiency(stats.averageKmPerLiter, state.data.settings.consumptionUnit)}</strong></div><div class="chart-area">${renderLineChart(stats.segments)}</div><div class="method-note"><svg><use href="#i-check"></use></svg><span>Partial fills accumulate until the next full tank. Segments containing a missed fill are excluded.</span></div></article>
       <article class="panel chart-panel"><div class="panel-head"><div><h3>Cost breakdown</h3><p>Where ownership money goes</p></div></div><div class="breakdown-layout"><div class="donut" tabindex="0" data-chart-tooltip="${escapeHTML(`Total ownership spend · ${formatMoney(stats.totalSpend, currency())}`)}" style="background:${donutBackground}"><div class="donut-center"><strong>${formatMoney(stats.totalSpend, currency(), { compact: true })}</strong><small>Total</small></div></div><div class="category-bars">

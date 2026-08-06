@@ -364,7 +364,24 @@ try {
     };
   })()`);
   assert.ok(Object.values(mobilePlotUsage).every((usage) => usage >= 0.77), `Phone charts should devote at least 77% of their width to the plot: ${JSON.stringify(mobilePlotUsage)}`);
+  assert.ok(mobilePlotUsage.monthly >= 0.87, `Phone monthly spending should devote at least 87% of its width to the plot: ${JSON.stringify(mobilePlotUsage)}`);
   assert.equal(await evaluate(`document.querySelector('.station-chart-legend').textContent.includes('Y-axis') && document.querySelector('.odometer-legend').textContent.includes('Y-axis')`), true, 'Compact phone axes should keep their units visible in chart legends.');
+  const monthlyPhoneAxis = await evaluate(`(() => {
+    const frame = document.querySelector('.bar-chart-frame');
+    const frameRect = frame.getBoundingClientRect();
+    const labels = [...frame.querySelectorAll('.bar-y-axis-label')];
+    const subtitle = frame.closest('.chart-panel').querySelector('.panel-head p').textContent;
+    return {
+      labels: labels.map((label) => label.textContent.trim()),
+      currency: ${JSON.stringify('INR')},
+      subtitle,
+      contained: labels.every((label) => {
+        const rect = label.getBoundingClientRect();
+        return rect.left >= frameRect.left - 1 && rect.right <= frameRect.right + 1;
+      })
+    };
+  })()`);
+  assert.ok(monthlyPhoneAxis.contained && monthlyPhoneAxis.subtitle.includes(monthlyPhoneAxis.currency) && monthlyPhoneAxis.labels.every((label) => !label.includes(monthlyPhoneAxis.currency) && !label.includes('₹')), `Phone monthly ticks should be compact while the subtitle identifies the currency: ${JSON.stringify(monthlyPhoneAxis)}`);
   const mobileMonthLabels = await evaluate(`[...document.querySelectorAll('.bar-axis-label')].map((label) => {
     const rect = label.getBoundingClientRect();
     return { text: label.textContent.trim(), left: rect.left, right: rect.right };

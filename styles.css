@@ -1253,6 +1253,17 @@ button.timeline-item:hover {
   white-space: nowrap;
 }
 
+.bar-y-axis-sizer {
+  display: grid;
+  width: max-content;
+  height: 0;
+  overflow: hidden;
+  font-size: var(--chart-axis-font-size);
+  line-height: 1;
+  visibility: hidden;
+  white-space: nowrap;
+}
+
 .bar-grid-line {
   position: absolute;
   z-index: 0;
@@ -2655,7 +2666,7 @@ button.timeline-item:hover {
   .report-summary .metric-card { padding: 14px; }
   .reports-grid { grid-template-columns: minmax(0, 1fr); }
   .chart-frame { --chart-axis-font-size: 14px; }
-  .bar-chart { grid-template-columns: 66px minmax(0, 1fr); column-gap: 6px; }
+  .bar-chart { grid-template-columns: max-content minmax(0, 1fr); column-gap: 6px; }
   .chart-overview-note { font-size: 0.65rem; }
   .station-economy-chart { height: 250px; }
   .legend-context { width: 100%; margin-left: 0; }
