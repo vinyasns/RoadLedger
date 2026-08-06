@@ -996,6 +996,7 @@ function renderGarage() {
           <div class="data-actions">
             <button class="button subtle" type="button" data-action="install"><svg><use href="#i-download"></use></svg>Install app</button>
             <button class="button subtle" type="button" data-action="sample">Load sample data</button>
+            <a class="button subtle project-link" href="https://github.com/vinyasns/RoadLedger" target="_blank" rel="noopener noreferrer"><svg><use href="#i-external"></use></svg>View project on GitHub</a>
           </div>
           <div class="settings-row"><div><strong class="danger-zone">Reset RoadLedger</strong><small>Permanently remove all local data</small></div><button class="button danger" type="button" data-action="reset">Reset</button></div>
         </section>

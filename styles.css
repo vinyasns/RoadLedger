@@ -2030,6 +2030,11 @@ button.timeline-item:hover {
   font-size: 0.72rem;
 }
 
+.data-actions .project-link {
+  grid-column: 1 / -1;
+  text-decoration: none;
+}
+
 .storage-status {
   display: flex;
   align-items: center;

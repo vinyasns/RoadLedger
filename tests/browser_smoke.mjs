@@ -199,6 +199,16 @@ try {
   await evaluate(`document.querySelector('[data-nav="garage"]').click()`);
   await waitFor(`document.querySelector('#view-garage').classList.contains('active') && document.querySelector('.storage-status')`);
   assert.equal(await evaluate(`document.querySelector('.storage-status').textContent.includes('RoadLedger data') && !document.querySelector('.storage-status').textContent.includes('MB used')`), true);
+  assert.equal(await evaluate(`(() => {
+    const link = document.querySelector('.project-link');
+    return Boolean(
+      link
+      && link.href === 'https://github.com/vinyasns/RoadLedger'
+      && link.target === '_blank'
+      && link.rel.includes('noopener')
+      && link.rel.includes('noreferrer')
+    );
+  })()`), true, 'The app settings should link safely to the GitHub project.');
   await evaluate(`(() => {
     Object.defineProperty(navigator.storage, 'persisted', { configurable: true, value: async () => false });
     Object.defineProperty(navigator.storage, 'persist', { configurable: true, value: async () => false });
