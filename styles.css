@@ -2058,6 +2058,13 @@ button.timeline-item:hover {
   flex: 0 0 auto;
 }
 
+.storage-protection-note {
+  margin: 8px 2px 0;
+  color: var(--text-soft);
+  font-size: 0.67rem;
+  line-height: 1.5;
+}
+
 .danger-zone {
   color: var(--danger);
 }

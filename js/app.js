@@ -62,6 +62,7 @@ const state = {
   pendingImport: null,
   deferredInstallPrompt: null,
   storage: null,
+  persistenceRequestDenied: false,
   offlineReady: false,
   stationSummaryExpanded: false
 };
@@ -989,6 +990,7 @@ function renderGarage() {
             <button class="button subtle" type="button" data-action="csv-import"><svg><use href="#i-upload"></use></svg>Import CSV</button>
           </div>
           <div class="storage-status"><svg><use href="#i-check"></use></svg><span>${escapeHTML(storageText)}</span>${state.storage?.supported && !state.storage.persisted ? '<button class="text-button" type="button" data-action="persist">Protect</button>' : ''}</div>
+          <p class="storage-protection-note"${state.persistenceRequestDenied ? '' : ' hidden'}>Some browsers reconsider after you add a record, install the app, or use it more. Try <strong>Protect</strong> again later.</p>
         </section>
         <section class="settings-card"><h3>App</h3><p>RoadLedger ${APP_VERSION} · Local-first PWA</p>
           <div class="data-actions">
@@ -1010,6 +1012,8 @@ async function updateStorageStatus() {
       if (element) {
         element.innerHTML = `<svg><use href="#i-check"></use></svg><span>${escapeHTML(storageStatusText())}</span>${state.storage.supported && !state.storage.persisted ? '<button class="text-button" type="button" data-action="persist">Protect</button>' : ''}`;
       }
+      const note = $('.storage-protection-note');
+      if (note) note.hidden = !state.persistenceRequestDenied;
     }
   } catch {
     // Storage estimates are a progressive enhancement.
@@ -1669,13 +1673,14 @@ async function handleDynamicAction(target) {
   if (action === 'install') await installApp();
   if (action === 'persist') {
     const result = await requestPersistentStorage();
+    state.persistenceRequestDenied = result.supported && !result.persisted;
     await updateStorageStatus();
     if (result.persisted) {
       toast('Extra storage protection is active. Your data remains saved on this device.');
     } else if (!result.supported) {
       toast('Your data is saved on this device. This browser does not offer extra cleanup protection; keep a backup.', 'success', 6000);
     } else {
-      toast('Your data is saved on this device. The browser kept standard storage instead of enabling extra cleanup protection; keep a backup.', 'success', 6000);
+      toast('Your data is saved on this device. Add a record or use the installed app, then try Protect again later.', 'success', 6000);
     }
   }
 }

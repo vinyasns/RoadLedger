@@ -207,7 +207,15 @@ try {
   await waitFor(`[...document.querySelectorAll('.toast')].some((element) => element.textContent.includes('Your data is saved on this device'))`);
   assert.equal(await evaluate(`(() => {
     const notice = [...document.querySelectorAll('.toast')].find((element) => element.textContent.includes('Your data is saved on this device'));
-    return Boolean(notice && !notice.classList.contains('error') && document.querySelector('.storage-status').textContent.includes('Standard browser storage'));
+    const retryNote = document.querySelector('.storage-protection-note');
+    return Boolean(
+      notice
+      && !notice.classList.contains('error')
+      && document.querySelector('.storage-status').textContent.includes('Standard browser storage')
+      && !retryNote.hidden
+      && retryNote.textContent.includes('add a record')
+      && retryNote.textContent.includes('Try Protect again')
+    );
   })()`), true, 'A denied persistence request should be explained as standard local storage, not an error.');
   const immediateLightTheme = await evaluate(`(() => {
     const select = document.querySelector('#setting-theme');
