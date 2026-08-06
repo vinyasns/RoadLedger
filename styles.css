@@ -1196,13 +1196,6 @@ button.timeline-item:hover {
   min-height: 230px;
 }
 
-.chart-scroll {
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  scrollbar-color: var(--line-strong) transparent;
-  scrollbar-width: thin;
-}
-
 .chart-frame {
   width: 100%;
   min-width: 0;
@@ -1219,17 +1212,6 @@ button.timeline-item:hover {
   margin-top: 7px;
   color: var(--text-faint);
   font-size: 0.62rem;
-}
-
-.chart-scroll-hint {
-  display: none;
-  margin-top: 7px;
-  color: var(--text-faint);
-  font-size: 0.62rem;
-}
-
-.chart-scroll-hint.visible {
-  display: block;
 }
 
 .bar-chart {
@@ -1619,6 +1601,8 @@ button.timeline-item:hover {
 }
 
 .odometer-chart {
+  width: 100%;
+  min-width: 0;
   height: 250px;
 }
 
@@ -1631,7 +1615,19 @@ button.timeline-item:hover {
 
 .odometer-point {
   fill: var(--surface);
+  stroke: var(--point-color, var(--primary));
   stroke-width: 3;
+}
+
+.odometer-point.dense-point:not(.marker) {
+  fill: transparent;
+  stroke: transparent;
+}
+
+.odometer-point.dense-point:not(.marker):hover,
+.odometer-point.dense-point:not(.marker):focus {
+  fill: var(--surface);
+  stroke: var(--point-color, var(--primary));
 }
 
 [data-chart-tooltip] {
@@ -2631,7 +2627,6 @@ button.timeline-item:hover {
   .section-toolbar .button svg + span { display: none; }
   .report-summary .metric-card { padding: 14px; }
   .reports-grid { grid-template-columns: minmax(0, 1fr); }
-  .chart-scroll-hint { display: block; }
   .chart-overview-note { font-size: 0.65rem; }
   .station-economy-chart { height: 250px; }
   .odometer-chart text { font-size: 14px; }

@@ -786,19 +786,23 @@ function renderOdometerChart(cutoffDate) {
   const padding = Math.max(1, (rawMax - rawMin) * 0.08);
   const minOdometer = Math.max(0, rawMin - padding);
   const maxOdometer = rawMax + padding;
-  const width = Math.max(680, Math.min(2800, allPoints.length * 18));
-  const left = 92;
-  const right = width - 24;
+  const width = reportChartWidth({ wide: true });
+  const left = width < 420 ? 104 : 112;
+  const right = width - 12;
   const top = 24;
   const bottom = 200;
   const xForDate = (date) => minDate === maxDate ? (left + right) / 2 : left + (right - left) * ((parseLocalDate(date).getTime() - minDate) / (maxDate - minDate));
   const yForOdometer = (value) => bottom - (bottom - top) * ((value - minOdometer) / Math.max(1, maxOdometer - minOdometer));
   const xTickRatios = minDate === maxDate ? [0.5] : width > 900 ? [0, 0.25, 0.5, 0.75, 1] : [0, 0.5, 1];
   const yTicks = [maxOdometer, (minOdometer + maxOdometer) / 2, minOdometer];
+  const largestSeries = Math.max(...series.map((item) => item.points.length));
+  const pointSpacing = (right - left) / Math.max(1, largestSeries - 1);
+  const densePoints = pointSpacing < 6;
+  const pointRadius = densePoints ? 4 : pointSpacing < 7 ? 3.6 : 5;
   return `
     <div class="chart-legend odometer-legend">${series.map((item) => `<span class="legend-item"><i style="background:${safeColor(item.vehicle.color)}"></i>${escapeHTML(item.vehicle.name)}</span>`).join('')}</div>
-    <div class="chart-scroll odometer-chart-scroll" role="region" aria-label="Scrollable odometer history">
-      <svg class="line-chart odometer-chart" viewBox="0 0 ${width} 250" style="min-width:${width}px" role="img" aria-label="Odometer history">
+    <div class="chart-frame odometer-chart-frame" role="region" aria-label="Odometer overview showing the complete selected period">
+      <svg class="line-chart odometer-chart" viewBox="0 0 ${width} 250" data-chart-width="${width}" role="img" aria-label="Odometer history">
         ${yTicks.map((value) => {
           const y = yForOdometer(value);
           return `<line class="grid-line" x1="${left}" y1="${y}" x2="${right}" y2="${y}"/><text x="${left - 10}" y="${y + 4}" text-anchor="end">${escapeHTML(formatDistance(value, state.data.settings))}</text>`;
@@ -807,20 +811,23 @@ function renderOdometerChart(cutoffDate) {
           const x = left + (right - left) * ratio;
           const time = minDate + (maxDate - minDate) * ratio;
           const anchor = index === 0 ? 'start' : index === xTickRatios.length - 1 ? 'end' : 'middle';
-          return `<line class="grid-line vertical" x1="${x}" y1="${top}" x2="${x}" y2="${bottom}"/><text x="${x}" y="240" text-anchor="${anchor}">${escapeHTML(formatDate(todayISO(new Date(time)), { short: true }))}</text>`;
+          const label = new Intl.DateTimeFormat(undefined, { month: 'short', year: width < 500 ? '2-digit' : 'numeric' }).format(new Date(time));
+          return `<line class="grid-line vertical" x1="${x}" y1="${top}" x2="${x}" y2="${bottom}"/><text x="${x}" y="240" text-anchor="${anchor}">${escapeHTML(label)}</text>`;
         }).join('')}
         ${series.map((item) => {
           const coordinates = item.points.map((point) => ({ x: xForDate(point.date), y: yForOdometer(point.odometerKm), point }));
           const path = coordinates.map((point, index) => `${index ? 'L' : 'M'}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
           const color = safeColor(item.vehicle.color);
-          return `<path class="odometer-line" d="${path}" style="stroke:${color}"/>${coordinates.map((point) => {
+          const markerEvery = Math.max(1, Math.ceil(coordinates.length / 14));
+          return `<path class="odometer-line" d="${path}" style="stroke:${color}"/>${coordinates.map((point, index) => {
             const tooltip = `${item.vehicle.name} · ${formatDate(point.point.date, { short: true })} · ${formatDistance(point.point.odometerKm, state.data.settings)}`;
-            return `<circle class="odometer-point chart-point" cx="${point.x}" cy="${point.y}" r="5" style="stroke:${color}" tabindex="0" role="img" aria-label="${escapeHTML(tooltip)}" data-chart-tooltip="${escapeHTML(tooltip)}"/>`;
+            const marker = !densePoints || index === 0 || index === coordinates.length - 1 || index % markerEvery === 0;
+            return `<circle class="odometer-point chart-point${densePoints ? ' dense-point' : ''}${marker ? ' marker' : ''}" cx="${point.x}" cy="${point.y}" r="${pointRadius}" style="--point-color:${color}" tabindex="0" role="img" aria-label="${escapeHTML(tooltip)}" data-chart-tooltip="${escapeHTML(tooltip)}"/>`;
           }).join('')}`;
         }).join('')}
       </svg>
     </div>
-    <small class="chart-scroll-hint${width > 700 ? ' visible' : ''}">Scroll sideways to inspect every recorded odometer point.</small>`;
+    <small class="chart-overview-note">All ${allPoints.length} reading${allPoints.length === 1 ? '' : 's'} shown · Tap or hover a point for details.</small>`;
 }
 
 function renderReports() {

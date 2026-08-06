@@ -253,7 +253,8 @@ try {
   const desktopChartFit = await evaluate(`(() => [
     ['.bar-chart-frame', '.bar-chart'],
     ['.fuel-economy-frame', '.fuel-economy-chart'],
-    ['.station-chart-frame', '.station-economy-chart']
+    ['.station-chart-frame', '.station-economy-chart'],
+    ['.odometer-chart-frame', '.odometer-chart']
   ].map(([frameSelector, chartSelector]) => {
     const frame = document.querySelector(frameSelector);
     const chart = document.querySelector(chartSelector);
@@ -289,7 +290,7 @@ try {
   writeFileSync(join(tmpdir(), 'roadledger-report-details-tested.png'), Buffer.from(reportDetailsShot.data, 'base64'));
 
   await command('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-  await waitFor(`['.fuel-economy-chart', '.station-economy-chart'].every((selector) => {
+  await waitFor(`['.fuel-economy-chart', '.station-economy-chart', '.odometer-chart'].every((selector) => {
     const chart = document.querySelector(selector);
     return Math.abs(Number(chart.dataset.chartWidth) - chart.parentElement.clientWidth) <= 2;
   })`);
@@ -297,7 +298,8 @@ try {
   const mobileChartFit = await evaluate(`(() => [
     ['.bar-chart-frame', '.bar-chart'],
     ['.fuel-economy-frame', '.fuel-economy-chart'],
-    ['.station-chart-frame', '.station-economy-chart']
+    ['.station-chart-frame', '.station-economy-chart'],
+    ['.odometer-chart-frame', '.odometer-chart']
   ].map(([frameSelector, chartSelector]) => {
     const frame = document.querySelector(frameSelector);
     const chart = document.querySelector(chartSelector);
@@ -330,16 +332,16 @@ try {
   await delay(300);
   const odometerMobileLayout = await evaluate(`(() => {
     const chart = document.querySelector('.odometer-chart');
-    const scroller = document.querySelector('.odometer-chart-scroll');
+    const frame = document.querySelector('.odometer-chart-frame');
     return {
       fontSize: parseFloat(getComputedStyle(chart.querySelector('text')).fontSize),
       chartWidth: chart.getBoundingClientRect().width,
-      clientWidth: scroller.clientWidth,
-      scrollWidth: scroller.scrollWidth
+      clientWidth: frame.clientWidth,
+      scrollWidth: frame.scrollWidth
     };
   })()`);
   assert.ok(odometerMobileLayout.fontSize >= 14, `Odometer labels are too small: ${JSON.stringify(odometerMobileLayout)}`);
-  assert.ok(odometerMobileLayout.chartWidth >= 680 && odometerMobileLayout.scrollWidth > odometerMobileLayout.clientWidth, `Odometer chart should stay readable and scroll horizontally on phones: ${JSON.stringify(odometerMobileLayout)}`);
+  assert.ok(odometerMobileLayout.chartWidth <= odometerMobileLayout.clientWidth + 1 && odometerMobileLayout.scrollWidth <= odometerMobileLayout.clientWidth + 1, `Odometer chart should fit without horizontal scrolling: ${JSON.stringify(odometerMobileLayout)}`);
   const odometerMobileShot = await command('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
   writeFileSync(join(tmpdir(), 'roadledger-odometer-mobile-tested.png'), Buffer.from(odometerMobileShot.data, 'base64'));
   await evaluate(`document.querySelector('[data-nav="dashboard"]').click()`);
@@ -381,7 +383,7 @@ try {
   await waitFor(`document.readyState === 'complete' && !document.querySelector('#app').hidden && document.querySelector('#dashboard-content').textContent.includes(${JSON.stringify(swipeExpectation.nextName)})`, 15000);
   assert.equal(await evaluate(`navigator.serviceWorker.controller !== null`), true);
 
-  process.stdout.write('Browser smoke passed: fit-to-width 53-month/economy/station charts, legends/tooltips, readable mobile odometer axes, station reuse/reporting, mobile swipe, and offline reload.\n');
+  process.stdout.write('Browser smoke passed: fit-to-width monthly/economy/station/odometer charts, legends/tooltips, readable mobile axes, station reuse/reporting, mobile swipe, and offline reload.\n');
 } catch (error) {
   process.stderr.write(`${error.stack}\n${stderr.slice(-3000)}\n`);
   process.exitCode = 1;
