@@ -242,6 +242,21 @@ try {
   assert.equal(await evaluate(`document.querySelector('#reports-content').textContent.includes('Monthly spending')`), true);
   assert.equal(await evaluate(`document.querySelector('#reports-content').textContent.includes('Fuel details') && document.querySelector('#reports-content').textContent.includes('Fuel economy by station')`), true);
   assert.equal(await evaluate(`Boolean(document.querySelector('#reports-content .odometer-chart') && document.querySelector('#reports-content .station-table') && document.querySelector('#reports-content .station-economy-chart'))`), true);
+  const collapsedStationSummary = await evaluate(`(() => {
+    const disclosure = document.querySelector('.station-summary-disclosure');
+    const table = disclosure.querySelector('.station-table');
+    return { open: disclosure.open, tableHeight: table.getBoundingClientRect().height, label: disclosure.querySelector('summary').textContent.trim() };
+  })()`);
+  assert.ok(!collapsedStationSummary.open && collapsedStationSummary.tableHeight === 0 && collapsedStationSummary.label.includes('Station summary'), `Station summary should start collapsed: ${JSON.stringify(collapsedStationSummary)}`);
+  await evaluate(`document.querySelector('.station-summary-toggle').click()`);
+  await waitFor(`document.querySelector('.station-summary-disclosure').open && document.querySelector('.station-table').getBoundingClientRect().height > 0`);
+  await evaluate(`(() => {
+    document.querySelector('.station-summary-disclosure').dataset.beforeResize = 'true';
+    window.dispatchEvent(new Event('resize'));
+  })()`);
+  await waitFor(`document.querySelector('.station-summary-disclosure').open && !document.querySelector('.station-summary-disclosure').dataset.beforeResize`);
+  await evaluate(`document.querySelector('.station-summary-toggle').click()`);
+  await waitFor(`!document.querySelector('.station-summary-disclosure').open && document.querySelector('.station-table').getBoundingClientRect().height === 0`);
   assert.equal(await evaluate(`document.querySelector('.fuel-economy-legend').textContent.includes(${JSON.stringify(longHistoryVehicleName)})`), true, 'Fuel economy chart should identify its vehicle series.');
   assert.equal(await evaluate(`document.querySelectorAll('.bar-column[data-chart-tooltip]').length === 53`), true, 'Every all-time month should expose details.');
   const monthlyYAxis = await evaluate(`(() => {

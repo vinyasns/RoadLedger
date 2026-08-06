@@ -62,7 +62,8 @@ const state = {
   pendingImport: null,
   deferredInstallPrompt: null,
   storage: null,
-  offlineReady: false
+  offlineReady: false,
+  stationSummaryExpanded: false
 };
 
 const viewMeta = {
@@ -786,18 +787,25 @@ function renderStationReport(stations, segments) {
   }
   return `
     ${renderStationEconomyChart(segments, stations)}
-    <div class="station-summary-label"><strong>Station summary</strong><small>Weighted totals for the selected period</small></div>
-    <div class="station-table" role="table" aria-label="Fuel economy by station">
-      <div class="station-row station-header" role="row"><span>Station</span><span>Economy</span><span>Avg. price</span><span>Fuel spend</span></div>
-      ${stations.map((station) => `
-        <div class="station-row" role="row">
-          <div class="station-name"><strong>${escapeHTML(station.name)}</strong><small>${station.fillCount} fill-up${station.fillCount === 1 ? '' : 's'} · ${station.segmentCount} valid trip${station.segmentCount === 1 ? '' : 's'}</small></div>
-          <div data-label="Economy"><strong>${formatEfficiency(station.averageKmPerLiter, state.data.settings.consumptionUnit)}</strong>${station.segmentCount ? `<small>${formatEfficiency(station.lowestKmPerLiter, state.data.settings.consumptionUnit)} – ${formatEfficiency(station.highestKmPerLiter, state.data.settings.consumptionUnit)}</small>` : '<small>Needs another full tank</small>'}</div>
-          <div data-label="Avg. price"><strong>${formatPricePerVolume(station.spendMinor, station.volumeLiters)}</strong><small>Volume weighted</small></div>
-          <div data-label="Fuel spend"><strong>${formatMoney(station.spendMinor, currency(), { compact: true })}</strong><small>${formatVolume(station.volumeLiters, state.data.settings)}</small></div>
-        </div>`).join('')}
-    </div>
-    <div class="method-note"><svg><use href="#i-check"></use></svg><span>To compare fuel quality fairly, economy is credited to the station of the starting full tank. Segments containing partial or missed fills are excluded from station economy.</span></div>`;
+    <details class="station-summary-disclosure"${state.stationSummaryExpanded ? ' open' : ''}>
+      <summary class="station-summary-toggle">
+        <span><strong>Station summary</strong><small>${stations.length} station${stations.length === 1 ? '' : 's'} · Weighted totals for this period</small></span>
+        <span class="station-summary-action"><span class="when-closed">Show</span><span class="when-open">Hide</span><i aria-hidden="true"></i></span>
+      </summary>
+      <div class="station-summary-content">
+        <div class="station-table" role="table" aria-label="Fuel economy by station">
+          <div class="station-row station-header" role="row"><span>Station</span><span>Economy</span><span>Avg. price</span><span>Fuel spend</span></div>
+          ${stations.map((station) => `
+            <div class="station-row" role="row">
+              <div class="station-name"><strong>${escapeHTML(station.name)}</strong><small>${station.fillCount} fill-up${station.fillCount === 1 ? '' : 's'} · ${station.segmentCount} valid trip${station.segmentCount === 1 ? '' : 's'}</small></div>
+              <div data-label="Economy"><strong>${formatEfficiency(station.averageKmPerLiter, state.data.settings.consumptionUnit)}</strong>${station.segmentCount ? `<small>${formatEfficiency(station.lowestKmPerLiter, state.data.settings.consumptionUnit)} – ${formatEfficiency(station.highestKmPerLiter, state.data.settings.consumptionUnit)}</small>` : '<small>Needs another full tank</small>'}</div>
+              <div data-label="Avg. price"><strong>${formatPricePerVolume(station.spendMinor, station.volumeLiters)}</strong><small>Volume weighted</small></div>
+              <div data-label="Fuel spend"><strong>${formatMoney(station.spendMinor, currency(), { compact: true })}</strong><small>${formatVolume(station.volumeLiters, state.data.settings)}</small></div>
+            </div>`).join('')}
+        </div>
+        <div class="method-note"><svg><use href="#i-check"></use></svg><span>To compare fuel quality fairly, economy is credited to the station of the starting full tank. Segments containing partial or missed fills are excluded from station economy.</span></div>
+      </div>
+    </details>`;
 }
 
 function odometerSeries(cutoffDate) {
@@ -916,6 +924,10 @@ function renderReports() {
       <article class="panel chart-panel wide"><div class="panel-head"><div><h3>Odometer history</h3><p>Recorded distance over time</p></div></div>${renderOdometerChart(cutoff)}</article>
       <article class="panel chart-panel wide"><div class="panel-head"><div><h3>Service and expense categories</h3><p>Largest non-fuel costs</p></div></div>${categories.length ? `<div class="category-bars">${categories.map((item) => `<div class="category-row" tabindex="0" data-chart-tooltip="${escapeHTML(`${item.category} · ${formatMoney(item.amount, currency())}`)}"><span title="${escapeHTML(item.category)}">${escapeHTML(item.category)}</span><span class="category-track"><span class="category-fill" style="display:block;width:${item.amount / categoryMax * 100}%"></span></span><strong>${formatMoney(item.amount, currency(), { compact: true })}</strong></div>`).join('')}</div>` : `<div class="empty-inline"><div><strong>No service costs in this period</strong><small>Change the date range or add a service record.</small></div></div>`}</article>
     </div>`;
+  const stationSummary = $('.station-summary-disclosure', container);
+  stationSummary?.addEventListener('toggle', () => {
+    state.stationSummaryExpanded = stationSummary.open;
+  });
 }
 
 function formatBytes(bytes) {

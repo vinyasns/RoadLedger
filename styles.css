@@ -1557,20 +1557,95 @@ button.timeline-item:hover {
   border-bottom: 1px solid var(--line);
 }
 
-.station-summary-label {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 10px;
+.station-summary-disclosure {
+  min-width: 0;
 }
 
-.station-summary-label strong {
+.station-summary-toggle {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--surface-2);
+  cursor: pointer;
+  list-style: none;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.station-summary-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.station-summary-toggle:hover,
+.station-summary-toggle:focus-visible {
+  border-color: var(--line-strong);
+  background: var(--surface-3);
+  outline: 0;
+}
+
+.station-summary-toggle > span:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.station-summary-toggle strong {
   font-size: 0.76rem;
 }
 
-.station-summary-label small {
+.station-summary-toggle small {
+  overflow: hidden;
+  color: var(--text-soft);
   font-size: 0.62rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.station-summary-action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.station-summary-action i {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentcolor;
+  border-bottom: 2px solid currentcolor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 160ms ease;
+}
+
+.station-summary-disclosure .when-open {
+  display: none;
+}
+
+.station-summary-disclosure[open] .when-closed {
+  display: none;
+}
+
+.station-summary-disclosure[open] .when-open {
+  display: inline;
+}
+
+.station-summary-disclosure[open] .station-summary-action i {
+  transform: translateY(2px) rotate(225deg);
+}
+
+.station-summary-content {
+  padding-top: 12px;
+}
+
+.station-summary-disclosure:not([open]) > .station-summary-content {
+  display: none;
 }
 
 .station-table {
@@ -2671,7 +2746,8 @@ button.timeline-item:hover {
   .station-economy-chart { height: 250px; }
   .legend-context { width: 100%; margin-left: 0; }
   .legend-context.axis-unit-context { width: auto; margin-left: auto; }
-  .station-summary-label { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .station-summary-toggle { padding: 11px 12px; }
+  .station-summary-action { font-size: 0.65rem; }
   .station-table { overflow: visible; border: 0; }
   .station-header { display: none; }
   .station-row {
