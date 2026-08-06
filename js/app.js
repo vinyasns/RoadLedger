@@ -167,7 +167,7 @@ function navigate(view, { updateHash = true } = {}) {
   if (view === 'reports') renderReports();
   if (view === 'garage') renderGarage();
   $('#main-content')?.focus({ preventScroll: true });
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
 }
 
 function populateVehicleSelectors() {

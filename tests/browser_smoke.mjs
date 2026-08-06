@@ -406,6 +406,33 @@ try {
   assert.equal(await evaluate(`getComputedStyle(document.querySelector('.bottom-nav')).display === 'grid'`), true);
   const mobileLayout = await evaluate(`(() => { const rect = document.querySelector('.topbar-actions').getBoundingClientRect(); return { width: innerWidth, left: rect.left, right: rect.right, actionWidth: rect.width }; })()`);
   assert.ok(mobileLayout.actionWidth > 80 && mobileLayout.left < mobileLayout.width && mobileLayout.right <= mobileLayout.width + 1, `Topbar actions overflow the mobile viewport: ${JSON.stringify(mobileLayout)}`);
+  const mobileViewLayouts = [];
+  for (const view of ['logbook', 'reports', 'garage', 'dashboard']) {
+    await evaluate(`document.querySelector('.bottom-nav [data-nav="${view}"]').click()`);
+    await waitFor(`document.querySelector('#view-${view}').classList.contains('active')`);
+    await delay(250);
+    mobileViewLayouts.push(await evaluate(`(() => {
+      const navRect = document.querySelector('.bottom-nav').getBoundingClientRect();
+      const filter = document.querySelector('.filter-row');
+      return {
+        view: ${JSON.stringify(view)},
+        viewportWidth: innerWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        bodyWidth: document.body.scrollWidth,
+        scrollX,
+        navLeft: navRect.left,
+        navRight: navRect.right,
+        filterClientWidth: filter.clientWidth,
+        filterScrollWidth: filter.scrollWidth
+      };
+    })()`));
+  }
+  for (const layout of mobileViewLayouts) {
+    assert.ok(layout.documentWidth <= layout.viewportWidth + 1 && layout.bodyWidth <= layout.viewportWidth + 1 && Math.abs(layout.scrollX) <= 1, `Mobile ${layout.view} view should not scroll horizontally: ${JSON.stringify(layout)}`);
+    assert.ok(layout.navLeft >= -1 && layout.navRight <= layout.viewportWidth + 1, `Bottom navigation should stay fixed to the viewport in ${layout.view}: ${JSON.stringify(layout)}`);
+  }
+  const logbookLayout = mobileViewLayouts.find((layout) => layout.view === 'logbook');
+  assert.ok(logbookLayout.filterScrollWidth > logbookLayout.filterClientWidth, `Logbook filters should scroll internally without widening the page: ${JSON.stringify(logbookLayout)}`);
 
   await evaluate(`(() => {
     document.querySelector('#add-vehicle-button').click();
