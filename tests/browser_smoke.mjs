@@ -199,6 +199,16 @@ try {
   await evaluate(`document.querySelector('[data-nav="garage"]').click()`);
   await waitFor(`document.querySelector('#view-garage').classList.contains('active') && document.querySelector('.storage-status')`);
   assert.equal(await evaluate(`document.querySelector('.storage-status').textContent.includes('RoadLedger data') && !document.querySelector('.storage-status').textContent.includes('MB used')`), true);
+  await evaluate(`(() => {
+    Object.defineProperty(navigator.storage, 'persisted', { configurable: true, value: async () => false });
+    Object.defineProperty(navigator.storage, 'persist', { configurable: true, value: async () => false });
+    document.querySelector('[data-action="persist"]').click();
+  })()`);
+  await waitFor(`[...document.querySelectorAll('.toast')].some((element) => element.textContent.includes('Your data is saved on this device'))`);
+  assert.equal(await evaluate(`(() => {
+    const notice = [...document.querySelectorAll('.toast')].find((element) => element.textContent.includes('Your data is saved on this device'));
+    return Boolean(notice && !notice.classList.contains('error') && document.querySelector('.storage-status').textContent.includes('Standard browser storage'));
+  })()`), true, 'A denied persistence request should be explained as standard local storage, not an error.');
   const immediateLightTheme = await evaluate(`(() => {
     const select = document.querySelector('#setting-theme');
     select.value = 'light';
@@ -496,7 +506,7 @@ try {
   await waitFor(`document.readyState === 'complete' && !document.querySelector('#app').hidden && document.querySelector('#dashboard-content').textContent.includes(${JSON.stringify(swipeExpectation.nextName)})`, 15000);
   assert.equal(await evaluate(`navigator.serviceWorker.controller !== null`), true);
 
-  process.stdout.write('Browser smoke passed: fit-to-width monthly/economy/station/odometer charts, legends/tooltips, readable mobile axes, station reuse/reporting, mobile swipe, and offline reload.\n');
+  process.stdout.write('Browser smoke passed: local-storage messaging, fit-to-width charts, legends/tooltips, station reuse/reporting, mobile swipe, and offline reload.\n');
 } catch (error) {
   process.stderr.write(`${error.stack}\n${stderr.slice(-3000)}\n`);
   process.exitCode = 1;

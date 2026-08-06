@@ -955,7 +955,7 @@ function storageStatusText() {
   const size = formatBytes(roadLedgerDataBytes());
   if (!state.storage) return `RoadLedger data ≈ ${size}`;
   if (!state.storage.supported) return `Stored in this browser · RoadLedger data ≈ ${size}`;
-  return `${state.storage.persisted ? 'Protected from automatic cleanup' : 'May be cleared under device pressure'} · RoadLedger data ≈ ${size}`;
+  return `${state.storage.persisted ? 'Saved locally · Protected from automatic cleanup' : 'Saved locally · Standard browser storage'} · RoadLedger data ≈ ${size}`;
 }
 
 function renderGarage() {
@@ -1670,7 +1670,13 @@ async function handleDynamicAction(target) {
   if (action === 'persist') {
     const result = await requestPersistentStorage();
     await updateStorageStatus();
-    toast(result.persisted ? 'RoadLedger is protected from automatic browser cleanup.' : 'The browser did not grant persistent storage. Keep regular backups.', result.persisted ? 'success' : 'error', 5000);
+    if (result.persisted) {
+      toast('Extra storage protection is active. Your data remains saved on this device.');
+    } else if (!result.supported) {
+      toast('Your data is saved on this device. This browser does not offer extra cleanup protection; keep a backup.', 'success', 6000);
+    } else {
+      toast('Your data is saved on this device. The browser kept standard storage instead of enabling extra cleanup protection; keep a backup.', 'success', 6000);
+    }
   }
 }
 

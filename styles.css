@@ -2046,6 +2046,16 @@ button.timeline-item:hover {
 .storage-status svg {
   width: 15px;
   height: 15px;
+  flex: 0 0 auto;
+}
+
+.storage-status span {
+  min-width: 0;
+  flex: 1;
+}
+
+.storage-status .text-button {
+  flex: 0 0 auto;
 }
 
 .danger-zone {
