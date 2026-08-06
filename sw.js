@@ -1,4 +1,4 @@
-const CACHE_NAME = 'roadledger-v7';
+const CACHE_NAME = 'roadledger-v8';
 const APP_SHELL = [
   './',
   './index.html',

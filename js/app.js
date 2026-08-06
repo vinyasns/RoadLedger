@@ -526,21 +526,42 @@ function renderLogbook() {
   }).join('')}</div>`;
 }
 
+function reportChartWidth({ wide = false } = {}) {
+  const reportsWidth = Math.floor($('#reports-content')?.getBoundingClientRect().width || 0);
+  const mainWidth = Math.floor($('#main-content')?.getBoundingClientRect().width || 0);
+  const availableWidth = reportsWidth || mainWidth || Math.max(320, innerWidth - 30);
+  const singleColumn = matchMedia('(max-width: 840px)').matches;
+  const panelWidth = wide || singleColumn ? availableWidth : (availableWidth - 16) / 2;
+  const panelInsets = matchMedia('(max-width: 560px)').matches ? 36 : 46;
+  return Math.round(clamp(panelWidth - panelInsets, 280, 1200));
+}
+
 function renderBarChart(months) {
   const maximum = Math.max(1, ...months.map((item) => item.total));
   const extendedTimeline = months.length > 12;
-  const minimumWidth = Math.max(620, months.length * (extendedTimeline ? 48 : 52));
-  return `<div class="chart-scroll bar-chart-scroll" role="region" aria-label="Scrollable monthly spending chart"><div class="bar-chart" style="min-width:${minimumWidth}px">${months.map((item) => {
+  const chartWidth = reportChartWidth({ wide: true });
+  const maximumLabels = chartWidth < 420 ? 5 : chartWidth < 760 ? 7 : 10;
+  const labelCount = Math.min(months.length, maximumLabels);
+  const labelIndexes = new Set(Array.from({ length: labelCount }, (_, index) => labelCount === 1 ? 0 : Math.round(index * (months.length - 1) / (labelCount - 1))));
+  const bars = months.map((item) => {
     const totalHeight = item.total ? Math.max(4, item.total / maximum * 180) : 2;
     const fuelHeight = item.total ? item.fuel / item.total * 100 : 0;
     const serviceHeight = item.total ? item.service / item.total * 100 : 0;
     const expenseHeight = item.total ? item.expense / item.total * 100 : 0;
     const labelDate = parseLocalDate(`${item.key}-01`);
-    const label = new Intl.DateTimeFormat(undefined, extendedTimeline ? { month: 'short', year: '2-digit' } : { month: 'short' }).format(labelDate);
     const fullLabel = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(labelDate);
     const tooltip = `${fullLabel} · Total ${formatMoney(item.total, currency())} · Fuel ${formatMoney(item.fuel, currency())} · Service ${formatMoney(item.service, currency())} · Other ${formatMoney(item.expense, currency())}`;
-    return `<div class="bar-column" tabindex="0" role="img" aria-label="${escapeHTML(tooltip)}" data-chart-tooltip="${escapeHTML(tooltip)}"><div class="bar-stack" style="height:${totalHeight}px"><span class="bar-segment fuel" style="height:${fuelHeight}%"></span><span class="bar-segment service" style="height:${serviceHeight}%"></span><span class="bar-segment expense" style="height:${expenseHeight}%"></span></div><span class="bar-label">${escapeHTML(label)}</span></div>`;
-  }).join('')}</div></div>${extendedTimeline ? '<small class="chart-scroll-hint visible">Scroll sideways to inspect every month in the all-time history.</small>' : '<small class="chart-scroll-hint">Scroll sideways to inspect each month.</small>'}`;
+    return `<div class="bar-column" tabindex="0" role="img" aria-label="${escapeHTML(tooltip)}" data-chart-tooltip="${escapeHTML(tooltip)}"><div class="bar-stack" style="height:${totalHeight}px"><span class="bar-segment fuel" style="height:${fuelHeight}%"></span><span class="bar-segment service" style="height:${serviceHeight}%"></span><span class="bar-segment expense" style="height:${expenseHeight}%"></span></div></div>`;
+  }).join('');
+  const labels = months.map((item, index) => {
+    if (!labelIndexes.has(index)) return '';
+    const labelDate = parseLocalDate(`${item.key}-01`);
+    const label = new Intl.DateTimeFormat(undefined, extendedTimeline ? { month: 'short', year: '2-digit' } : { month: 'short' }).format(labelDate);
+    const position = months.length === 1 ? 50 : index / (months.length - 1) * 100;
+    const edgeClass = index === 0 ? ' first' : index === months.length - 1 ? ' last' : '';
+    return `<span class="bar-axis-label${edgeClass}" style="left:${position}%">${escapeHTML(label)}</span>`;
+  }).join('');
+  return `<div class="chart-frame bar-chart-frame" role="region" aria-label="Monthly spending overview showing the complete selected period"><div class="bar-chart${extendedTimeline ? ' dense' : ''}"><div class="bar-plot">${bars}</div><div class="bar-axis" aria-hidden="true">${labels}</div></div></div><small class="chart-overview-note">All ${months.length} month${months.length === 1 ? '' : 's'} shown · Tap or hover a bar for details.</small>`;
 }
 
 function renderLineChart(segments) {
@@ -564,9 +585,9 @@ function renderLineChart(segments) {
   const padding = Math.max(0.8, (rawMax - rawMin) * 0.14);
   const minEfficiency = Math.max(0.1, rawMin - padding);
   const maxEfficiency = rawMax + padding;
-  const width = Math.max(640, Math.min(2600, points.length * 22));
-  const left = 82;
-  const right = width - 24;
+  const width = reportChartWidth();
+  const left = width < 420 ? 82 : 88;
+  const right = width - 12;
   const top = 22;
   const bottom = 205;
   const middle = (top + bottom) / 2;
@@ -577,10 +598,13 @@ function renderLineChart(segments) {
   const yForEfficiency = (value) => bottom - (bottom - top) * ((value - minEfficiency) / Math.max(0.001, maxEfficiency - minEfficiency));
   const firstDate = points.reduce((earliest, point) => String(point.date) < earliest ? String(point.date) : earliest, String(points[0].date));
   const lastDate = points.reduce((latest, point) => String(point.date) > latest ? String(point.date) : latest, String(points[0].date));
+  const largestSeries = Math.max(...series.map((item) => item.points.length));
+  const pointSpacing = (right - left) / Math.max(1, largestSeries - 1);
+  const pointRadius = pointSpacing < 4 ? 2.8 : pointSpacing < 7 ? 3.6 : 5;
   return `
     <div class="chart-legend fuel-economy-legend">${series.map((item) => `<span class="legend-item"><i style="background:${safeColor(item.vehicle.color)}"></i>${escapeHTML(item.vehicle.name)}</span>`).join('')}<span class="legend-context">${escapeHTML(state.data.settings.consumptionUnit)} · higher is better</span></div>
-    <div class="chart-scroll fuel-economy-scroll" role="region" aria-label="Scrollable fuel economy trend">
-      <svg class="line-chart fuel-economy-chart" viewBox="0 0 ${width} 250" style="min-width:${width}px" role="img" aria-label="Fuel economy trend for ${escapeHTML(series.map((item) => item.vehicle.name).join(', '))}">
+    <div class="chart-frame fuel-economy-frame" role="region" aria-label="Fuel economy overview showing the complete selected period">
+      <svg class="line-chart fuel-economy-chart" viewBox="0 0 ${width} 250" data-chart-width="${width}" role="img" aria-label="Fuel economy trend for ${escapeHTML(series.map((item) => item.vehicle.name).join(', '))}">
         <line class="grid-line" x1="${left}" y1="${top}" x2="${right}" y2="${top}"/><line class="grid-line" x1="${left}" y1="${middle}" x2="${right}" y2="${middle}"/><line class="grid-line" x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}"/>
         <text x="${left - 10}" y="${top + 4}" text-anchor="end">${escapeHTML(formatEfficiency(maxEfficiency, state.data.settings.consumptionUnit))}</text>
         <text x="${left - 10}" y="${middle + 4}" text-anchor="end">${escapeHTML(formatEfficiency((minEfficiency + maxEfficiency) / 2, state.data.settings.consumptionUnit))}</text>
@@ -592,12 +616,12 @@ function renderLineChart(segments) {
           const path = coordinates.map((point, index) => `${index ? 'L' : 'M'}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
           return `<path class="fuel-economy-line" d="${path}" style="stroke:${color}"/>${coordinates.map((point) => {
             const tooltip = `${item.vehicle.name} · ${formatDate(point.point.date, { short: true })} · ${formatEfficiency(point.point.kmPerLiter, state.data.settings.consumptionUnit)} · ${formatDistance(point.point.distanceKm, state.data.settings)} on ${formatVolume(point.point.volumeLiters, state.data.settings)}`;
-            return `<circle class="fuel-economy-point chart-point" cx="${point.x}" cy="${point.y}" r="5" style="stroke:${color}" tabindex="0" role="img" aria-label="${escapeHTML(tooltip)}" data-chart-tooltip="${escapeHTML(tooltip)}"/>`;
+            return `<circle class="fuel-economy-point chart-point" cx="${point.x}" cy="${point.y}" r="${pointRadius}" style="stroke:${color}" tabindex="0" role="img" aria-label="${escapeHTML(tooltip)}" data-chart-tooltip="${escapeHTML(tooltip)}"/>`;
           }).join('')}`;
         }).join('')}
       </svg>
     </div>
-    <small class="chart-scroll-hint${width > 700 ? ' visible' : ''}">Scroll sideways to inspect the complete economy history.</small>`;
+    <small class="chart-overview-note">All ${points.length} segment${points.length === 1 ? '' : 's'} shown · Tap or hover a point for details.</small>`;
 }
 
 function formatPricePerVolume(spendMinor, liters) {
@@ -665,9 +689,9 @@ function renderStationEconomyChart(segments, stations) {
   const padding = Math.max(0.6, (rawMax - rawMin) * 0.14);
   const minEfficiency = Math.max(0.1, rawMin - padding);
   const maxEfficiency = rawMax + padding;
-  const width = Math.max(720, Math.min(2600, allPoints.length * 20));
-  const left = 76;
-  const right = width - 26;
+  const width = reportChartWidth({ wide: true });
+  const left = width < 420 ? 82 : 88;
+  const right = width - 12;
   const top = 22;
   const bottom = 220;
   const middle = (top + bottom) / 2;
@@ -677,6 +701,9 @@ function renderStationEconomyChart(segments, stations) {
   const yForEfficiency = (value) => bottom - (bottom - top) * ((value - minEfficiency) / Math.max(0.001, maxEfficiency - minEfficiency));
   const firstDate = allPoints.reduce((earliest, point) => String(point.date) < earliest ? String(point.date) : earliest, String(allPoints[0].date));
   const lastDate = allPoints.reduce((latest, point) => String(point.date) > latest ? String(point.date) : latest, String(allPoints[0].date));
+  const largestSeries = Math.max(...series.map((item) => item.points.length));
+  const pointSpacing = (right - left) / Math.max(1, largestSeries - 1);
+  const pointRadius = pointSpacing < 4 ? 2.8 : pointSpacing < 7 ? 3.6 : pointSpacing < 11 ? 4.2 : 5;
 
   return `
     <div class="station-economy-block">
@@ -684,8 +711,8 @@ function renderStationEconomyChart(segments, stations) {
         const tooltip = `${item.name} · latest ${formatEfficiency(item.points.at(-1).kmPerLiter, state.data.settings.consumptionUnit)} · ${item.points.length} comparable trip${item.points.length === 1 ? '' : 's'}`;
         return `<span class="legend-item" tabindex="0" data-chart-tooltip="${escapeHTML(tooltip)}"><i style="background:${STATION_CHART_COLORS[index % STATION_CHART_COLORS.length]}"></i>${escapeHTML(item.name)}</span>`;
       }).join('')}</div>
-      <div class="chart-scroll station-chart-scroll" role="region" aria-label="Scrollable station economy timeline">
-        <svg class="line-chart station-economy-chart" viewBox="0 0 ${width} 260" style="min-width:${width}px" role="img" aria-label="Fuel economy by station over time: ${escapeHTML(series.map((item) => item.name).join(', '))}">
+      <div class="chart-frame station-chart-frame" role="region" aria-label="Station economy overview showing the complete selected period">
+        <svg class="line-chart station-economy-chart" viewBox="0 0 ${width} 260" data-chart-width="${width}" role="img" aria-label="Fuel economy by station over time: ${escapeHTML(series.map((item) => item.name).join(', '))}">
           <line class="grid-line" x1="${left}" y1="${top}" x2="${right}" y2="${top}"/><line class="grid-line" x1="${left}" y1="${middle}" x2="${right}" y2="${middle}"/><line class="grid-line" x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}"/>
           <text x="${left - 10}" y="${top + 4}" text-anchor="end">${escapeHTML(formatEfficiency(maxEfficiency, state.data.settings.consumptionUnit))}</text>
           <text x="${left - 10}" y="${middle + 4}" text-anchor="end">${escapeHTML(formatEfficiency((minEfficiency + maxEfficiency) / 2, state.data.settings.consumptionUnit))}</text>
@@ -697,12 +724,12 @@ function renderStationEconomyChart(segments, stations) {
             const path = coordinates.map((point, pointIndex) => `${pointIndex ? 'L' : 'M'}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' ');
             return `<path class="station-series-line" d="${path}" style="stroke:${color}"/>${coordinates.map((point) => {
               const tooltip = `${item.name} · trip ending ${formatDate(point.point.date, { short: true })} · ${formatEfficiency(point.point.kmPerLiter, state.data.settings.consumptionUnit)}`;
-              return `<circle class="station-series-point chart-point" cx="${point.x}" cy="${point.y}" r="5" style="stroke:${color}" tabindex="0" role="img" aria-label="${escapeHTML(tooltip)}" data-chart-tooltip="${escapeHTML(tooltip)}"/>`;
+              return `<circle class="station-series-point chart-point" cx="${point.x}" cy="${point.y}" r="${pointRadius}" style="stroke:${color}" tabindex="0" role="img" aria-label="${escapeHTML(tooltip)}" data-chart-tooltip="${escapeHTML(tooltip)}"/>`;
             }).join('')}`;
           }).join('')}
         </svg>
       </div>
-      <small class="station-chart-hint${width > 720 ? ' visible' : ''}">Scroll sideways to inspect the full timeline.</small>
+      <small class="chart-overview-note">All ${allPoints.length} comparable trip${allPoints.length === 1 ? '' : 's'} shown · Tap or hover a point or station name for details.</small>
     </div>`;
 }
 
@@ -1583,6 +1610,14 @@ async function handleDynamicAction(target) {
 function bindEvents() {
   setupVehicleSwipe();
   setupChartTooltips();
+  let reportResizeTimer = null;
+  window.addEventListener('resize', () => {
+    if (state.currentView !== 'reports') return;
+    clearTimeout(reportResizeTimer);
+    reportResizeTimer = setTimeout(() => {
+      if (state.currentView === 'reports') renderReports();
+    }, 120);
+  });
   document.addEventListener('click', async (event) => {
     const nav = event.target.closest('[data-nav]');
     if (nav) {

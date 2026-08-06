@@ -250,6 +250,26 @@ try {
     '.odometer-point'
   ].every((selector) => document.querySelector(selector)?.hasAttribute('data-chart-tooltip'))`), true, 'Every point chart should expose interactive details.');
   assert.ok(await evaluate(`document.querySelectorAll('#reports-content .station-series-line').length` ) >= 2, 'The shared station chart should contain multiple station series.');
+  const desktopChartFit = await evaluate(`(() => [
+    ['.bar-chart-frame', '.bar-chart'],
+    ['.fuel-economy-frame', '.fuel-economy-chart'],
+    ['.station-chart-frame', '.station-economy-chart']
+  ].map(([frameSelector, chartSelector]) => {
+    const frame = document.querySelector(frameSelector);
+    const chart = document.querySelector(chartSelector);
+    const frameRect = frame.getBoundingClientRect();
+    const chartRect = chart.getBoundingClientRect();
+    return {
+      frameSelector,
+      clientWidth: frame.clientWidth,
+      scrollWidth: frame.scrollWidth,
+      chartWidth: chartRect.width,
+      contained: chartRect.left >= frameRect.left - 1 && chartRect.right <= frameRect.right + 1
+    };
+  }))()`);
+  for (const chart of desktopChartFit) {
+    assert.ok(chart.contained && chart.scrollWidth <= chart.clientWidth + 1, `Report chart should fit without horizontal scrolling: ${JSON.stringify(chart)}`);
+  }
   await evaluate(`(() => {
     const point = document.querySelector('.fuel-economy-point');
     point.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse', clientX: 220, clientY: 260 }));
@@ -269,8 +289,39 @@ try {
   writeFileSync(join(tmpdir(), 'roadledger-report-details-tested.png'), Buffer.from(reportDetailsShot.data, 'base64'));
 
   await command('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-  await delay(300);
+  await waitFor(`['.fuel-economy-chart', '.station-economy-chart'].every((selector) => {
+    const chart = document.querySelector(selector);
+    return Math.abs(Number(chart.dataset.chartWidth) - chart.parentElement.clientWidth) <= 2;
+  })`);
   assert.equal(await evaluate(`document.documentElement.scrollWidth <= innerWidth + 1`), true);
+  const mobileChartFit = await evaluate(`(() => [
+    ['.bar-chart-frame', '.bar-chart'],
+    ['.fuel-economy-frame', '.fuel-economy-chart'],
+    ['.station-chart-frame', '.station-economy-chart']
+  ].map(([frameSelector, chartSelector]) => {
+    const frame = document.querySelector(frameSelector);
+    const chart = document.querySelector(chartSelector);
+    const frameRect = frame.getBoundingClientRect();
+    const chartRect = chart.getBoundingClientRect();
+    return {
+      frameSelector,
+      clientWidth: frame.clientWidth,
+      scrollWidth: frame.scrollWidth,
+      chartWidth: chartRect.width,
+      contained: chartRect.left >= frameRect.left - 1 && chartRect.right <= frameRect.right + 1
+    };
+  }))()`);
+  for (const chart of mobileChartFit) {
+    assert.ok(chart.contained && chart.scrollWidth <= chart.clientWidth + 1, `Mobile report chart should fit without horizontal scrolling: ${JSON.stringify(chart)}`);
+  }
+  await evaluate(`document.querySelector('.bar-chart').scrollIntoView({ block: 'start' })`);
+  await delay(300);
+  const monthlyMobileShot = await command('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+  writeFileSync(join(tmpdir(), 'roadledger-monthly-mobile-tested.png'), Buffer.from(monthlyMobileShot.data, 'base64'));
+  await evaluate(`document.querySelector('.fuel-economy-chart').scrollIntoView({ block: 'start' })`);
+  await delay(300);
+  const economyMobileShot = await command('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+  writeFileSync(join(tmpdir(), 'roadledger-economy-mobile-tested.png'), Buffer.from(economyMobileShot.data, 'base64'));
   await evaluate(`document.querySelector('.station-economy-chart').scrollIntoView({ block: 'start' })`);
   await delay(300);
   const stationMobileShot = await command('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
@@ -330,7 +381,7 @@ try {
   await waitFor(`document.readyState === 'complete' && !document.querySelector('#app').hidden && document.querySelector('#dashboard-content').textContent.includes(${JSON.stringify(swipeExpectation.nextName)})`, 15000);
   assert.equal(await evaluate(`navigator.serviceWorker.controller !== null`), true);
 
-  process.stdout.write('Browser smoke passed: synthetic 53-month all-time reporting, chart legends/tooltips, readable mobile odometer axes, station reuse/reporting, mobile swipe, and offline reload.\n');
+  process.stdout.write('Browser smoke passed: fit-to-width 53-month/economy/station charts, legends/tooltips, readable mobile odometer axes, station reuse/reporting, mobile swipe, and offline reload.\n');
 } catch (error) {
   process.stderr.write(`${error.stack}\n${stderr.slice(-3000)}\n`);
   process.exitCode = 1;

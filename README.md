@@ -26,7 +26,7 @@ Production hosting only serves the static files; there is no Node.js process.
 - Recent-station quick picks plus shared timeline and summary comparisons by station
 - Service records, expenses, receipt images, and date/odometer reminders
 - Responsive dashboard, unified logbook, filters, dark mode, and detailed reports with interactive chart tooltips
-- Complete scrollable all-time monthly, fuel-economy, station-comparison, and odometer histories with accessible legends
+- Complete fit-to-width monthly, fuel-economy, and station-comparison overviews, plus a detailed scrollable odometer history
 - Kilometres/miles, litres/US gallons, km/L, L/100km, and US mpg
 - Versioned JSON backup/merge/restore and CSV export/import
 - IndexedDB storage, persistent-storage status, and offline app shell

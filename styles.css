@@ -1203,27 +1203,51 @@ button.timeline-item:hover {
   scrollbar-width: thin;
 }
 
-.chart-scroll-hint,
-.station-chart-hint {
+.chart-frame {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.chart-frame svg {
+  display: block;
+  max-width: 100%;
+}
+
+.chart-overview-note {
+  display: block;
+  margin-top: 7px;
+  color: var(--text-faint);
+  font-size: 0.62rem;
+}
+
+.chart-scroll-hint {
   display: none;
   margin-top: 7px;
   color: var(--text-faint);
   font-size: 0.62rem;
 }
 
-.chart-scroll-hint.visible,
-.station-chart-hint.visible {
+.chart-scroll-hint.visible {
   display: block;
 }
 
 .bar-chart {
-  display: flex;
   width: 100%;
   height: 230px;
-  align-items: stretch;
-  gap: clamp(5px, 1.5vw, 14px);
   padding-top: 20px;
+}
+
+.bar-plot {
+  display: flex;
+  height: 190px;
+  align-items: stretch;
+  gap: clamp(4px, 1vw, 12px);
   border-bottom: 1px solid var(--line);
+}
+
+.bar-chart.dense .bar-plot {
+  gap: 0;
 }
 
 .bar-column {
@@ -1232,11 +1256,16 @@ button.timeline-item:hover {
   flex: 1;
   flex-direction: column;
   justify-content: flex-end;
-  gap: 8px;
   border-radius: 8px 8px 0 0;
   cursor: pointer;
   outline: 0;
   text-align: center;
+}
+
+.bar-chart.dense .bar-stack {
+  width: calc(100% - 1px);
+  margin-inline: auto;
+  border-radius: 4px 4px 1px 1px;
 }
 
 .bar-column:hover .bar-stack,
@@ -1259,13 +1288,22 @@ button.timeline-item:hover {
 .bar-segment.service { background: var(--service); }
 .bar-segment.expense { background: var(--expense); }
 
-.bar-label {
-  overflow: hidden;
+.bar-axis {
+  position: relative;
+  height: 20px;
+}
+
+.bar-axis-label {
+  position: absolute;
+  top: 7px;
   color: var(--text-faint);
   font-size: 0.63rem;
-  text-overflow: ellipsis;
+  transform: translateX(-50%);
   white-space: nowrap;
 }
+
+.bar-axis-label.first { transform: none; }
+.bar-axis-label.last { transform: translateX(-100%); }
 
 .chart-legend {
   display: flex;
@@ -1464,15 +1502,9 @@ button.timeline-item:hover {
   margin-bottom: 8px;
 }
 
-.station-chart-scroll {
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  scrollbar-color: var(--line-strong) transparent;
-  scrollbar-width: thin;
-}
-
 .station-economy-chart {
-  min-width: 620px;
+  width: 100%;
+  min-width: 0;
   height: 260px;
 }
 
@@ -2599,8 +2631,8 @@ button.timeline-item:hover {
   .section-toolbar .button svg + span { display: none; }
   .report-summary .metric-card { padding: 14px; }
   .reports-grid { grid-template-columns: minmax(0, 1fr); }
-  .chart-scroll-hint,
-  .station-chart-hint { display: block; }
+  .chart-scroll-hint { display: block; }
+  .chart-overview-note { font-size: 0.65rem; }
   .station-economy-chart { height: 250px; }
   .odometer-chart text { font-size: 14px; }
   .legend-context { width: 100%; margin-left: 0; }
