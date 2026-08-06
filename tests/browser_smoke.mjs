@@ -244,6 +244,20 @@ try {
   assert.equal(await evaluate(`Boolean(document.querySelector('#reports-content .odometer-chart') && document.querySelector('#reports-content .station-table') && document.querySelector('#reports-content .station-economy-chart'))`), true);
   assert.equal(await evaluate(`document.querySelector('.fuel-economy-legend').textContent.includes(${JSON.stringify(longHistoryVehicleName)})`), true, 'Fuel economy chart should identify its vehicle series.');
   assert.equal(await evaluate(`document.querySelectorAll('.bar-column[data-chart-tooltip]').length === 53`), true, 'Every all-time month should expose details.');
+  const monthlyYAxis = await evaluate(`(() => {
+    const frameRect = document.querySelector('.bar-chart-frame').getBoundingClientRect();
+    const labels = [...document.querySelectorAll('.bar-y-axis-label')];
+    return {
+      count: labels.length,
+      values: labels.map((label) => label.textContent.trim()),
+      gridLines: document.querySelectorAll('.bar-grid-line').length,
+      contained: labels.every((label) => {
+        const rect = label.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && rect.left >= frameRect.left - 1 && rect.right <= frameRect.right + 1;
+      })
+    };
+  })()`);
+  assert.ok(monthlyYAxis.count === 3 && monthlyYAxis.gridLines === 3 && monthlyYAxis.contained && monthlyYAxis.values[0] !== monthlyYAxis.values[2], `Monthly spending should show a visible currency Y-axis: ${JSON.stringify(monthlyYAxis)}`);
   assert.equal(await evaluate(`[
     '.fuel-economy-point',
     '.station-series-point',
@@ -271,6 +285,15 @@ try {
   for (const chart of desktopChartFit) {
     assert.ok(chart.contained && chart.scrollWidth <= chart.clientWidth + 1, `Report chart should fit without horizontal scrolling: ${JSON.stringify(chart)}`);
   }
+  const desktopAxisFontSizes = await evaluate(`(() => [
+    '.bar-axis-label',
+    '.bar-y-axis-label',
+    '.fuel-economy-chart text',
+    '.station-economy-chart text',
+    '.odometer-chart text'
+  ].map((selector) => parseFloat(getComputedStyle(document.querySelector(selector)).fontSize)))()`);
+  assert.equal(new Set(desktopAxisFontSizes).size, 1, `Desktop chart axes should use one label size: ${JSON.stringify(desktopAxisFontSizes)}`);
+  assert.equal(desktopAxisFontSizes[0], 12, `Desktop chart axis labels should be 12px: ${JSON.stringify(desktopAxisFontSizes)}`);
   await evaluate(`(() => {
     const point = document.querySelector('.fuel-economy-point');
     point.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse', clientX: 220, clientY: 260 }));
@@ -316,6 +339,20 @@ try {
   for (const chart of mobileChartFit) {
     assert.ok(chart.contained && chart.scrollWidth <= chart.clientWidth + 1, `Mobile report chart should fit without horizontal scrolling: ${JSON.stringify(chart)}`);
   }
+  const mobileAxisFontSizes = await evaluate(`(() => [
+    '.bar-axis-label',
+    '.bar-y-axis-label',
+    '.fuel-economy-chart text',
+    '.station-economy-chart text',
+    '.odometer-chart text'
+  ].map((selector) => parseFloat(getComputedStyle(document.querySelector(selector)).fontSize)))()`);
+  assert.equal(new Set(mobileAxisFontSizes).size, 1, `Mobile chart axes should use one label size: ${JSON.stringify(mobileAxisFontSizes)}`);
+  assert.equal(mobileAxisFontSizes[0], 14, `Mobile chart axis labels should be 14px: ${JSON.stringify(mobileAxisFontSizes)}`);
+  const mobileMonthLabels = await evaluate(`[...document.querySelectorAll('.bar-axis-label')].map((label) => {
+    const rect = label.getBoundingClientRect();
+    return { text: label.textContent.trim(), left: rect.left, right: rect.right };
+  })`);
+  assert.ok(mobileMonthLabels.every((label, index) => index === 0 || label.left >= mobileMonthLabels[index - 1].right + 2), `Mobile monthly axis labels should not overlap: ${JSON.stringify(mobileMonthLabels)}`);
   await evaluate(`document.querySelector('.bar-chart').scrollIntoView({ block: 'start' })`);
   await delay(300);
   const monthlyMobileShot = await command('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });

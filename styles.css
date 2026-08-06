@@ -1197,6 +1197,8 @@ button.timeline-item:hover {
 }
 
 .chart-frame {
+  --chart-axis-font-size: 12px;
+
   width: 100%;
   min-width: 0;
   overflow: hidden;
@@ -1215,17 +1217,47 @@ button.timeline-item:hover {
 }
 
 .bar-chart {
+  display: grid;
   width: 100%;
   height: 230px;
+  grid-template-columns: 78px minmax(0, 1fr);
+  grid-template-rows: 180px 30px;
+  column-gap: 10px;
   padding-top: 20px;
 }
 
 .bar-plot {
+  position: relative;
   display: flex;
-  height: 190px;
+  grid-column: 2;
+  grid-row: 1;
   align-items: stretch;
   gap: clamp(4px, 1vw, 12px);
-  border-bottom: 1px solid var(--line);
+}
+
+.bar-y-axis {
+  position: relative;
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.bar-y-axis-label {
+  position: absolute;
+  right: 0;
+  color: var(--text-faint);
+  font-size: var(--chart-axis-font-size);
+  line-height: 1;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.bar-grid-line {
+  position: absolute;
+  z-index: 0;
+  right: 0;
+  left: 0;
+  border-top: 1px solid var(--line);
+  pointer-events: none;
 }
 
 .bar-chart.dense .bar-plot {
@@ -1233,6 +1265,8 @@ button.timeline-item:hover {
 }
 
 .bar-column {
+  position: relative;
+  z-index: 1;
   display: flex;
   min-width: 0;
   flex: 1;
@@ -1272,6 +1306,8 @@ button.timeline-item:hover {
 
 .bar-axis {
   position: relative;
+  grid-column: 2;
+  grid-row: 2;
   height: 20px;
 }
 
@@ -1279,7 +1315,8 @@ button.timeline-item:hover {
   position: absolute;
   top: 7px;
   color: var(--text-faint);
-  font-size: 0.63rem;
+  font-size: var(--chart-axis-font-size);
+  line-height: 1;
   transform: translateX(-50%);
   white-space: nowrap;
 }
@@ -1319,6 +1356,12 @@ button.timeline-item:hover {
   overflow: visible;
 }
 
+.line-chart text {
+  fill: var(--text-faint);
+  font-family: var(--font-body);
+  font-size: var(--chart-axis-font-size);
+}
+
 .line-chart .grid-line {
   stroke: var(--line);
   stroke-width: 1;
@@ -1348,12 +1391,6 @@ button.timeline-item:hover {
 
 .fuel-economy-chart {
   height: 250px;
-}
-
-.fuel-economy-chart text {
-  fill: var(--text-faint);
-  font-family: var(--font-body);
-  font-size: 12px;
 }
 
 .fuel-economy-line {
@@ -1490,12 +1527,6 @@ button.timeline-item:hover {
   height: 260px;
 }
 
-.station-economy-chart text {
-  fill: var(--text-faint);
-  font-family: var(--font-body);
-  font-size: 12px;
-}
-
 .station-series-line {
   fill: none;
   stroke-linecap: round;
@@ -1592,12 +1623,6 @@ button.timeline-item:hover {
 
 .odometer-legend {
   margin-bottom: 6px;
-}
-
-.odometer-chart text {
-  fill: var(--text-faint);
-  font-family: var(--font-body);
-  font-size: 12px;
 }
 
 .odometer-chart {
@@ -2627,9 +2652,10 @@ button.timeline-item:hover {
   .section-toolbar .button svg + span { display: none; }
   .report-summary .metric-card { padding: 14px; }
   .reports-grid { grid-template-columns: minmax(0, 1fr); }
+  .chart-frame { --chart-axis-font-size: 14px; }
+  .bar-chart { grid-template-columns: 86px minmax(0, 1fr); column-gap: 8px; }
   .chart-overview-note { font-size: 0.65rem; }
   .station-economy-chart { height: 250px; }
-  .odometer-chart text { font-size: 14px; }
   .legend-context { width: 100%; margin-left: 0; }
   .station-summary-label { align-items: flex-start; flex-direction: column; gap: 2px; }
   .station-table { overflow: visible; border: 0; }

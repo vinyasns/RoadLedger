@@ -537,14 +537,15 @@ function reportChartWidth({ wide = false } = {}) {
 }
 
 function renderBarChart(months) {
-  const maximum = Math.max(1, ...months.map((item) => item.total));
+  const maximum = Math.max(0, ...months.map((item) => item.total));
+  const scaleMaximum = Math.max(1, maximum);
   const extendedTimeline = months.length > 12;
   const chartWidth = reportChartWidth({ wide: true });
-  const maximumLabels = chartWidth < 420 ? 5 : chartWidth < 760 ? 7 : 10;
+  const maximumLabels = chartWidth < 420 ? 4 : chartWidth < 760 ? 7 : 10;
   const labelCount = Math.min(months.length, maximumLabels);
   const labelIndexes = new Set(Array.from({ length: labelCount }, (_, index) => labelCount === 1 ? 0 : Math.round(index * (months.length - 1) / (labelCount - 1))));
   const bars = months.map((item) => {
-    const totalHeight = item.total ? Math.max(4, item.total / maximum * 180) : 2;
+    const totalHeight = item.total ? Math.max(4, item.total / scaleMaximum * 180) : 2;
     const fuelHeight = item.total ? item.fuel / item.total * 100 : 0;
     const serviceHeight = item.total ? item.service / item.total * 100 : 0;
     const expenseHeight = item.total ? item.expense / item.total * 100 : 0;
@@ -561,7 +562,12 @@ function renderBarChart(months) {
     const edgeClass = index === 0 ? ' first' : index === months.length - 1 ? ' last' : '';
     return `<span class="bar-axis-label${edgeClass}" style="left:${position}%">${escapeHTML(label)}</span>`;
   }).join('');
-  return `<div class="chart-frame bar-chart-frame" role="region" aria-label="Monthly spending overview showing the complete selected period"><div class="bar-chart${extendedTimeline ? ' dense' : ''}"><div class="bar-plot">${bars}</div><div class="bar-axis" aria-hidden="true">${labels}</div></div></div><small class="chart-overview-note">All ${months.length} month${months.length === 1 ? '' : 's'} shown · Tap or hover a bar for details.</small>`;
+  const yTicks = maximum > 0
+    ? [{ value: maximum, position: 0 }, { value: maximum / 2, position: 50 }, { value: 0, position: 100 }]
+    : [{ value: 0, position: 100 }];
+  const yLabels = yTicks.map((tick) => `<span class="bar-y-axis-label" style="top:${tick.position}%">${escapeHTML(formatMoney(Math.round(tick.value), currency(), { compact: true }))}</span>`).join('');
+  const gridLines = yTicks.map((tick) => `<span class="bar-grid-line" style="top:${tick.position}%"></span>`).join('');
+  return `<div class="chart-frame bar-chart-frame" role="region" aria-label="Monthly spending overview showing the complete selected period; vertical axis shows total spending"><div class="bar-chart${extendedTimeline ? ' dense' : ''}"><div class="bar-y-axis" aria-hidden="true">${yLabels}</div><div class="bar-plot">${gridLines}${bars}</div><div class="bar-axis" aria-hidden="true">${labels}</div></div></div><small class="chart-overview-note">All ${months.length} month${months.length === 1 ? '' : 's'} shown · Tap or hover a bar for details.</small>`;
 }
 
 function renderLineChart(segments) {
