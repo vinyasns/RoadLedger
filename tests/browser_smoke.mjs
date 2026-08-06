@@ -348,6 +348,23 @@ try {
   ].map((selector) => parseFloat(getComputedStyle(document.querySelector(selector)).fontSize)))()`);
   assert.equal(new Set(mobileAxisFontSizes).size, 1, `Mobile chart axes should use one label size: ${JSON.stringify(mobileAxisFontSizes)}`);
   assert.equal(mobileAxisFontSizes[0], 14, `Mobile chart axis labels should be 14px: ${JSON.stringify(mobileAxisFontSizes)}`);
+  const mobilePlotUsage = await evaluate(`(() => {
+    const barFrame = document.querySelector('.bar-chart-frame');
+    const barPlot = document.querySelector('.bar-plot');
+    const svgUsage = (selector) => {
+      const chart = document.querySelector(selector);
+      const gridLine = chart.querySelector('.grid-line');
+      return (Number(gridLine.getAttribute('x2')) - Number(gridLine.getAttribute('x1'))) / chart.viewBox.baseVal.width;
+    };
+    return {
+      monthly: barPlot.getBoundingClientRect().width / barFrame.getBoundingClientRect().width,
+      economy: svgUsage('.fuel-economy-chart'),
+      station: svgUsage('.station-economy-chart'),
+      odometer: svgUsage('.odometer-chart')
+    };
+  })()`);
+  assert.ok(Object.values(mobilePlotUsage).every((usage) => usage >= 0.77), `Phone charts should devote at least 77% of their width to the plot: ${JSON.stringify(mobilePlotUsage)}`);
+  assert.equal(await evaluate(`document.querySelector('.station-chart-legend').textContent.includes('Y-axis') && document.querySelector('.odometer-legend').textContent.includes('Y-axis')`), true, 'Compact phone axes should keep their units visible in chart legends.');
   const mobileMonthLabels = await evaluate(`[...document.querySelectorAll('.bar-axis-label')].map((label) => {
     const rect = label.getBoundingClientRect();
     return { text: label.textContent.trim(), left: rect.left, right: rect.right };

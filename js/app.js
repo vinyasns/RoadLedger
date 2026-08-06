@@ -536,10 +536,49 @@ function reportChartWidth({ wide = false } = {}) {
   return Math.round(clamp(panelWidth - panelInsets, 280, 1200));
 }
 
+function useCompactChartAxes() {
+  return matchMedia('(max-width: 560px)').matches;
+}
+
+function formatMoneyAxis(minor, compact) {
+  if (!compact) return formatMoney(Math.round(minor), currency(), { compact: true });
+  const value = minorToMoney(minor);
+  const useCompactNotation = Math.abs(value) >= 1000;
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: currency(),
+      notation: useCompactNotation ? 'compact' : 'standard',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: useCompactNotation ? 1 : 0
+    }).format(value);
+  } catch {
+    return formatMoney(Math.round(minor), currency(), { compact: true });
+  }
+}
+
+function formatEfficiencyAxis(kmPerLiter, compact) {
+  const formatted = formatEfficiency(kmPerLiter, state.data.settings.consumptionUnit);
+  if (!compact) return formatted;
+  const suffix = ` ${state.data.settings.consumptionUnit}`;
+  return formatted.endsWith(suffix) ? formatted.slice(0, -suffix.length) : formatted;
+}
+
+function formatDistanceAxis(km, compact) {
+  if (!compact) return formatDistance(km, state.data.settings);
+  const value = fromCanonicalDistance(km, state.data.settings.distanceUnit);
+  return new Intl.NumberFormat(undefined, {
+    notation: Math.abs(value) >= 1000 ? 'compact' : 'standard',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1
+  }).format(value);
+}
+
 function renderBarChart(months) {
   const maximum = Math.max(0, ...months.map((item) => item.total));
   const scaleMaximum = Math.max(1, maximum);
   const extendedTimeline = months.length > 12;
+  const compactAxis = useCompactChartAxes();
   const chartWidth = reportChartWidth({ wide: true });
   const maximumLabels = chartWidth < 420 ? 4 : chartWidth < 760 ? 7 : 10;
   const labelCount = Math.min(months.length, maximumLabels);
@@ -565,7 +604,7 @@ function renderBarChart(months) {
   const yTicks = maximum > 0
     ? [{ value: maximum, position: 0 }, { value: maximum / 2, position: 50 }, { value: 0, position: 100 }]
     : [{ value: 0, position: 100 }];
-  const yLabels = yTicks.map((tick) => `<span class="bar-y-axis-label" style="top:${tick.position}%">${escapeHTML(formatMoney(Math.round(tick.value), currency(), { compact: true }))}</span>`).join('');
+  const yLabels = yTicks.map((tick) => `<span class="bar-y-axis-label" style="top:${tick.position}%">${escapeHTML(formatMoneyAxis(tick.value, compactAxis))}</span>`).join('');
   const gridLines = yTicks.map((tick) => `<span class="bar-grid-line" style="top:${tick.position}%"></span>`).join('');
   return `<div class="chart-frame bar-chart-frame" role="region" aria-label="Monthly spending overview showing the complete selected period; vertical axis shows total spending"><div class="bar-chart${extendedTimeline ? ' dense' : ''}"><div class="bar-y-axis" aria-hidden="true">${yLabels}</div><div class="bar-plot">${gridLines}${bars}</div><div class="bar-axis" aria-hidden="true">${labels}</div></div></div><small class="chart-overview-note">All ${months.length} month${months.length === 1 ? '' : 's'} shown · Tap or hover a bar for details.</small>`;
 }
@@ -591,9 +630,10 @@ function renderLineChart(segments) {
   const padding = Math.max(0.8, (rawMax - rawMin) * 0.14);
   const minEfficiency = Math.max(0.1, rawMin - padding);
   const maxEfficiency = rawMax + padding;
+  const compactAxis = useCompactChartAxes();
   const width = reportChartWidth();
-  const left = width < 420 ? 82 : 88;
-  const right = width - 12;
+  const left = compactAxis ? 46 : 88;
+  const right = width - (compactAxis ? 8 : 12);
   const top = 22;
   const bottom = 205;
   const middle = (top + bottom) / 2;
@@ -612,9 +652,9 @@ function renderLineChart(segments) {
     <div class="chart-frame fuel-economy-frame" role="region" aria-label="Fuel economy overview showing the complete selected period">
       <svg class="line-chart fuel-economy-chart" viewBox="0 0 ${width} 250" data-chart-width="${width}" role="img" aria-label="Fuel economy trend for ${escapeHTML(series.map((item) => item.vehicle.name).join(', '))}">
         <line class="grid-line" x1="${left}" y1="${top}" x2="${right}" y2="${top}"/><line class="grid-line" x1="${left}" y1="${middle}" x2="${right}" y2="${middle}"/><line class="grid-line" x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}"/>
-        <text x="${left - 10}" y="${top + 4}" text-anchor="end">${escapeHTML(formatEfficiency(maxEfficiency, state.data.settings.consumptionUnit))}</text>
-        <text x="${left - 10}" y="${middle + 4}" text-anchor="end">${escapeHTML(formatEfficiency((minEfficiency + maxEfficiency) / 2, state.data.settings.consumptionUnit))}</text>
-        <text x="${left - 10}" y="${bottom + 4}" text-anchor="end">${escapeHTML(formatEfficiency(minEfficiency, state.data.settings.consumptionUnit))}</text>
+        <text x="${left - 8}" y="${top + 4}" text-anchor="end">${escapeHTML(formatEfficiencyAxis(maxEfficiency, compactAxis))}</text>
+        <text x="${left - 8}" y="${middle + 4}" text-anchor="end">${escapeHTML(formatEfficiencyAxis((minEfficiency + maxEfficiency) / 2, compactAxis))}</text>
+        <text x="${left - 8}" y="${bottom + 4}" text-anchor="end">${escapeHTML(formatEfficiencyAxis(minEfficiency, compactAxis))}</text>
         <text x="${left}" y="240" text-anchor="start">${escapeHTML(formatDate(firstDate, { short: true }))}</text><text x="${right}" y="240" text-anchor="end">${escapeHTML(formatDate(lastDate, { short: true }))}</text>
         ${series.map((item) => {
           const color = safeColor(item.vehicle.color);
@@ -695,9 +735,10 @@ function renderStationEconomyChart(segments, stations) {
   const padding = Math.max(0.6, (rawMax - rawMin) * 0.14);
   const minEfficiency = Math.max(0.1, rawMin - padding);
   const maxEfficiency = rawMax + padding;
+  const compactAxis = useCompactChartAxes();
   const width = reportChartWidth({ wide: true });
-  const left = width < 420 ? 82 : 88;
-  const right = width - 12;
+  const left = compactAxis ? 46 : 88;
+  const right = width - (compactAxis ? 8 : 12);
   const top = 22;
   const bottom = 220;
   const middle = (top + bottom) / 2;
@@ -716,13 +757,13 @@ function renderStationEconomyChart(segments, stations) {
       <div class="chart-legend station-chart-legend">${series.map((item, index) => {
         const tooltip = `${item.name} · latest ${formatEfficiency(item.points.at(-1).kmPerLiter, state.data.settings.consumptionUnit)} · ${item.points.length} comparable trip${item.points.length === 1 ? '' : 's'}`;
         return `<span class="legend-item" tabindex="0" data-chart-tooltip="${escapeHTML(tooltip)}"><i style="background:${STATION_CHART_COLORS[index % STATION_CHART_COLORS.length]}"></i>${escapeHTML(item.name)}</span>`;
-      }).join('')}</div>
+      }).join('')}<span class="legend-context axis-unit-context">Y-axis · ${escapeHTML(state.data.settings.consumptionUnit)}</span></div>
       <div class="chart-frame station-chart-frame" role="region" aria-label="Station economy overview showing the complete selected period">
         <svg class="line-chart station-economy-chart" viewBox="0 0 ${width} 260" data-chart-width="${width}" role="img" aria-label="Fuel economy by station over time: ${escapeHTML(series.map((item) => item.name).join(', '))}">
           <line class="grid-line" x1="${left}" y1="${top}" x2="${right}" y2="${top}"/><line class="grid-line" x1="${left}" y1="${middle}" x2="${right}" y2="${middle}"/><line class="grid-line" x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}"/>
-          <text x="${left - 10}" y="${top + 4}" text-anchor="end">${escapeHTML(formatEfficiency(maxEfficiency, state.data.settings.consumptionUnit))}</text>
-          <text x="${left - 10}" y="${middle + 4}" text-anchor="end">${escapeHTML(formatEfficiency((minEfficiency + maxEfficiency) / 2, state.data.settings.consumptionUnit))}</text>
-          <text x="${left - 10}" y="${bottom + 4}" text-anchor="end">${escapeHTML(formatEfficiency(minEfficiency, state.data.settings.consumptionUnit))}</text>
+          <text x="${left - 8}" y="${top + 4}" text-anchor="end">${escapeHTML(formatEfficiencyAxis(maxEfficiency, compactAxis))}</text>
+          <text x="${left - 8}" y="${middle + 4}" text-anchor="end">${escapeHTML(formatEfficiencyAxis((minEfficiency + maxEfficiency) / 2, compactAxis))}</text>
+          <text x="${left - 8}" y="${bottom + 4}" text-anchor="end">${escapeHTML(formatEfficiencyAxis(minEfficiency, compactAxis))}</text>
           <text x="${left}" y="250" text-anchor="start">${escapeHTML(formatDate(firstDate, { short: true }))}</text><text x="${right}" y="250" text-anchor="end">${escapeHTML(formatDate(lastDate, { short: true }))}</text>
           ${series.map((item, index) => {
             const color = STATION_CHART_COLORS[index % STATION_CHART_COLORS.length];
@@ -792,9 +833,10 @@ function renderOdometerChart(cutoffDate) {
   const padding = Math.max(1, (rawMax - rawMin) * 0.08);
   const minOdometer = Math.max(0, rawMin - padding);
   const maxOdometer = rawMax + padding;
+  const compactAxis = useCompactChartAxes();
   const width = reportChartWidth({ wide: true });
-  const left = width < 420 ? 104 : 112;
-  const right = width - 12;
+  const left = compactAxis ? 58 : 112;
+  const right = width - (compactAxis ? 8 : 12);
   const top = 24;
   const bottom = 200;
   const xForDate = (date) => minDate === maxDate ? (left + right) / 2 : left + (right - left) * ((parseLocalDate(date).getTime() - minDate) / (maxDate - minDate));
@@ -806,12 +848,12 @@ function renderOdometerChart(cutoffDate) {
   const densePoints = pointSpacing < 6;
   const pointRadius = densePoints ? 4 : pointSpacing < 7 ? 3.6 : 5;
   return `
-    <div class="chart-legend odometer-legend">${series.map((item) => `<span class="legend-item"><i style="background:${safeColor(item.vehicle.color)}"></i>${escapeHTML(item.vehicle.name)}</span>`).join('')}</div>
+    <div class="chart-legend odometer-legend">${series.map((item) => `<span class="legend-item"><i style="background:${safeColor(item.vehicle.color)}"></i>${escapeHTML(item.vehicle.name)}</span>`).join('')}<span class="legend-context axis-unit-context">Y-axis · ${escapeHTML(state.data.settings.distanceUnit)}</span></div>
     <div class="chart-frame odometer-chart-frame" role="region" aria-label="Odometer overview showing the complete selected period">
       <svg class="line-chart odometer-chart" viewBox="0 0 ${width} 250" data-chart-width="${width}" role="img" aria-label="Odometer history">
         ${yTicks.map((value) => {
           const y = yForOdometer(value);
-          return `<line class="grid-line" x1="${left}" y1="${y}" x2="${right}" y2="${y}"/><text x="${left - 10}" y="${y + 4}" text-anchor="end">${escapeHTML(formatDistance(value, state.data.settings))}</text>`;
+          return `<line class="grid-line" x1="${left}" y1="${y}" x2="${right}" y2="${y}"/><text x="${left - 8}" y="${y + 4}" text-anchor="end">${escapeHTML(formatDistanceAxis(value, compactAxis))}</text>`;
         }).join('')}
         ${xTickRatios.map((ratio, index) => {
           const x = left + (right - left) * ratio;

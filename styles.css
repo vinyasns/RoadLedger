@@ -2653,10 +2653,11 @@ button.timeline-item:hover {
   .report-summary .metric-card { padding: 14px; }
   .reports-grid { grid-template-columns: minmax(0, 1fr); }
   .chart-frame { --chart-axis-font-size: 14px; }
-  .bar-chart { grid-template-columns: 86px minmax(0, 1fr); column-gap: 8px; }
+  .bar-chart { grid-template-columns: 66px minmax(0, 1fr); column-gap: 6px; }
   .chart-overview-note { font-size: 0.65rem; }
   .station-economy-chart { height: 250px; }
   .legend-context { width: 100%; margin-left: 0; }
+  .legend-context.axis-unit-context { width: auto; margin-left: auto; }
   .station-summary-label { align-items: flex-start; flex-direction: column; gap: 2px; }
   .station-table { overflow: visible; border: 0; }
   .station-header { display: none; }
