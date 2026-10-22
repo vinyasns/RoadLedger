@@ -64,7 +64,9 @@ const state = {
   storage: null,
   persistenceRequestDenied: false,
   offlineReady: false,
-  stationSummaryExpanded: false
+  stationSummaryExpanded: false,
+  fuelAutoCalculationField: null,
+  fuelEntryCalculationActive: false
 };
 
 const viewMeta = {
@@ -1025,21 +1027,72 @@ function updateFormUnitLabels() {
   const settings = state.data.settings;
   $('#odometer-unit-label').textContent = settings.distanceUnit;
   $('#volume-unit-label').textContent = settings.volumeUnit;
+  $('#fuel-rate-volume-unit').textContent = settings.volumeUnit;
   $$('.distance-unit').forEach((element) => { element.textContent = settings.distanceUnit; });
   $$('.currency-code').forEach((element) => { element.textContent = settings.currency; });
-  updateFuelUnitPrice();
 }
 
-function updateFuelUnitPrice() {
-  const output = $('#fuel-unit-price');
-  if (!output) return;
-  const quantity = Number($('#fuel-quantity')?.value);
-  const totalCost = Number($('#fuel-cost')?.value);
-  const ready = Number.isFinite(quantity) && quantity > 0 && Number.isFinite(totalCost) && totalCost >= 0 && $('#fuel-cost').value !== '';
-  output.classList.toggle('ready', ready);
-  output.textContent = ready
-    ? `Unit price: ${formatMoney(moneyToMinor(totalCost / quantity), currency())} per ${state.data.settings.volumeUnit}`
-    : 'Enter quantity and cost to calculate unit price';
+function fuelInputValue(field) {
+  const value = $(`#fuel-${field}`).value.trim();
+  if (!value) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function formatFuelInput(value, digits) {
+  return String(Number(value.toFixed(digits)));
+}
+
+function updateCalculatedFuelField(target, values) {
+  let result = null;
+  if (target === 'quantity' && values.rate > 0) result = values.cost / values.rate;
+  if (target === 'cost' && values.quantity !== null && values.rate !== null) result = moneyToMinor(values.quantity * values.rate) / 100;
+  if (target === 'rate' && values.quantity > 0) result = values.cost / values.quantity;
+
+  const input = $(`#fuel-${target}`);
+  if (!Number.isFinite(result) || result < 0) {
+    input.value = '';
+    return false;
+  }
+
+  input.value = target === 'cost' ? result.toFixed(2) : formatFuelInput(result, target === 'quantity' ? 4 : 6);
+  return true;
+}
+
+function updateFuelCalculations(changedField = null) {
+  const fields = ['quantity', 'cost', 'rate'];
+  const values = Object.fromEntries(fields.map((field) => [field, fuelInputValue(field)]));
+  const current = changedField ? $(`#fuel-${changedField}`).value.trim() : null;
+
+  // Leave a field empty while the user is clearing or replacing its value.
+  if (changedField && current === '') {
+    if (state.fuelAutoCalculationField === changedField) {
+      state.fuelAutoCalculationField = null;
+      state.fuelEntryCalculationActive = false;
+    }
+    return;
+  }
+
+  const enteredFields = fields.filter((field) => values[field] !== null);
+  if (enteredFields.length === 2) {
+    const target = fields.find((field) => values[field] === null);
+    const calculated = updateCalculatedFuelField(target, values);
+    state.fuelAutoCalculationField = calculated ? target : null;
+    state.fuelEntryCalculationActive = Boolean(calculated && changedField);
+    return;
+  }
+
+  if (enteredFields.length !== fields.length || !changedField) return;
+
+  if (state.fuelEntryCalculationActive && state.fuelAutoCalculationField && changedField !== state.fuelAutoCalculationField) {
+    updateCalculatedFuelField(state.fuelAutoCalculationField, values);
+    return;
+  }
+
+  state.fuelEntryCalculationActive = false;
+  state.fuelAutoCalculationField = null;
+  const target = changedField === 'quantity' ? 'cost' : 'quantity';
+  updateCalculatedFuelField(target, values);
 }
 
 function setRecordKind(kind, { editing = false } = {}) {
@@ -1088,6 +1141,8 @@ function openRecordForm(kind = 'fuel', record = null) {
   }
   const form = $('#record-form');
   form.reset();
+  state.fuelAutoCalculationField = null;
+  state.fuelEntryCalculationActive = false;
   $('#record-form-error').hidden = true;
   $('#record-id').value = record?.id ?? '';
   $('#record-date').value = record?.date ?? todayISO();
@@ -1100,14 +1155,14 @@ function openRecordForm(kind = 'fuel', record = null) {
   setRecordKind(kind, { editing: Boolean(record) });
 
   if (kind === 'fuel') {
-    $('#fuel-quantity').value = record ? fromCanonicalVolume(record.quantityLiters, state.data.settings.volumeUnit).toFixed(2).replace(/0+$/, '').replace(/\.$/, '') : '';
+    $('#fuel-quantity').value = record ? formatFuelInput(fromCanonicalVolume(record.quantityLiters, state.data.settings.volumeUnit), 4) : '';
     $('#fuel-cost').value = record ? minorToMoney(record.totalCostMinor) : '';
     $('#fuel-grade').value = record?.fuelGrade ?? '';
     $('#fuel-station').value = record?.station ?? '';
     $('#fuel-full-tank').checked = record?.fullTank ?? true;
     $('#fuel-missed-fill').checked = record?.missedFill ?? false;
     updateFuelSuggestions(preferredVehicle);
-    updateFuelUnitPrice();
+    updateFuelCalculations();
   } else {
     const categories = kind === 'expense' ? EXPENSE_CATEGORIES : SERVICE_CATEGORIES;
     if (record?.category && !categories.includes(record.category)) {
@@ -1176,6 +1231,7 @@ async function processImage(file) {
 async function handleRecordSubmit(event) {
   event.preventDefault();
   const kind = $('#record-kind').value;
+  if (kind === 'fuel') updateFuelCalculations();
   const id = $('#record-id').value;
   const formError = $('#record-form-error');
   formError.hidden = true;
@@ -1200,18 +1256,20 @@ async function handleRecordSubmit(event) {
   let value;
   let storeName;
   if (kind === 'fuel') {
-    const quantityInput = Number($('#fuel-quantity').value);
-    const costInput = Number($('#fuel-cost').value);
-    if (!Number.isFinite(quantityInput) || quantityInput <= 0) errors.push('Fuel quantity must be greater than zero.');
-    if (!Number.isFinite(costInput) || costInput < 0) errors.push('Enter a valid fuel cost.');
+    const quantityInput = fuelInputValue('quantity');
+    const costInput = fuelInputValue('cost');
+    const rateInput = fuelInputValue('rate');
+    if (quantityInput === null || quantityInput <= 0) errors.push('Enter two valid fuel values so quantity can be calculated.');
+    if (costInput === null || costInput < 0) errors.push('Enter two valid fuel values so total cost can be calculated.');
+    if (rateInput === null || rateInput < 0) errors.push('Enter two valid fuel values so fuel rate can be calculated.');
     storeName = 'fuelLogs';
     value = {
       id: id || createId('fuel'),
       vehicleId,
       date,
       odometerKm,
-      quantityLiters: toCanonicalVolume(quantityInput, state.data.settings.volumeUnit),
-      totalCostMinor: moneyToMinor(costInput),
+      quantityLiters: toCanonicalVolume(quantityInput ?? 0, state.data.settings.volumeUnit),
+      totalCostMinor: moneyToMinor(costInput ?? 0),
       fuelGrade: $('#fuel-grade').value.trim(),
       station: $('#fuel-station').value.trim(),
       fullTank: $('#fuel-full-tank').checked,
@@ -1751,8 +1809,14 @@ function bindEvents() {
     $('#record-odometer').value = fromCanonicalDistance(currentOdometer(vehicle, state.data.fuelLogs, state.data.serviceRecords), state.data.settings.distanceUnit).toFixed(1).replace(/\.0$/, '');
     updateFuelSuggestions(vehicle?.id);
   });
-  $('#fuel-quantity').addEventListener('input', updateFuelUnitPrice);
-  $('#fuel-cost').addEventListener('input', updateFuelUnitPrice);
+  ['quantity', 'cost', 'rate'].forEach((field) => {
+    $(`#fuel-${field}`).addEventListener('input', () => updateFuelCalculations(field));
+  });
+  $('#record-form').addEventListener('focusout', (event) => {
+    if (['fuel-quantity', 'fuel-cost', 'fuel-rate'].includes(event.target.id)) {
+      state.fuelEntryCalculationActive = false;
+    }
+  });
   $('#fuel-station').addEventListener('input', () => {
     const value = $('#fuel-station').value.trim().toLocaleLowerCase();
     $$('[data-station-pick]', $('#station-quick-picks')).forEach((button) => button.classList.toggle('selected', button.dataset.stationPick.toLocaleLowerCase() === value));
